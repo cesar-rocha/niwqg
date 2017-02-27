@@ -11,9 +11,9 @@ conda install h5py
 ```
 
 ## Obtaining niwqg
-If you're a git user, fork and clone `niwqg` repository. Alternatively, just
-download the repository by clicking on the link in the upper-right corner of
-this page. 
+If you're a git user, fork and clone your fork of the `niwqg` repository.
+Alternatively, just download the repository by clicking on the link in the
+upper-right corner of this page.
 
 ## Installing niwqg
 Inside the root niwqg directory, install the package:
