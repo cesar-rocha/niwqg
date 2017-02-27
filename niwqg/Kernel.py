@@ -320,7 +320,7 @@ class Kernel(object):
 
     def _calc_ep_phi(self):
         """ calculates dissipation of NIW KE due to hyperviscosity """
-        return self.nu4*(np.abs(self.lapphi)**2).mean()
+        return self.nu4w*(np.abs(self.lapphi)**2).mean()
 
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
