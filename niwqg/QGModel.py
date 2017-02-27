@@ -30,7 +30,7 @@ class QGModel(object):
         nu4=5.e9,                   # hyperviscosity
         beta = 0,                   # beta
         dealias = False,
-        save_snapshots=True,
+        save_to_disk=True,
         overwrite=True,
         tsave_snapshots=10,  # in snapshots
         tdiags = 10,  # diagnostics
@@ -60,7 +60,7 @@ class QGModel(object):
         self.nu4 = nu4
 
         # saving stuff
-        self.save_snapshots = save_snapshots
+        self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
         self.path = path

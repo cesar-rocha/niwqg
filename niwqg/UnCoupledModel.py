@@ -1,5 +1,5 @@
 import numpy as np
-import Kernel
+from . import Kernel
 
 class Model(Kernel.Kernel):
     """ A subclass that represents the YBJ-QG uncoupled model """

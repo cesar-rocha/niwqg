@@ -3,8 +3,8 @@ from numpy import pi
 import logging, os
 import h5py
 
-from Diagnostics import *
-from Saving import *
+from .Diagnostics import *
+from .Saving import *
 
 class Kernel(object):
 
@@ -31,7 +31,7 @@ class Kernel(object):
         nu4=5.e9,                   # hyperviscosity
         nu4w=5.e5,                  # hyperviscosity waves
         dealias = False,
-        save_snapshots=True,
+        save_to_disk=True,
         overwrite=True,
         tsave_snapshots=10,         # interval fro saving snapshots (in timesteps)
         tdiags=10,                  # interval for diagnostics (in timesteps)
@@ -67,10 +67,10 @@ class Kernel(object):
         self.hslash = self.f/self.kappa2
 
         # saving stuff
-        self.save_snapshots = save_snapshots
+        self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
-        
+
         self.tdiags = tdiags
         self.path = path
 

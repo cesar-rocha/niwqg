@@ -7,7 +7,7 @@ def init_save_snapshots(self,path):
 
     self.fno = path
 
-    if not os.path.isdir(self.fno):
+    if (not os.path.isdir(self.fno)) and self.save_to_disk:
         os.makedirs(self.fno)
         os.makedirs(self.fno+"/snapshots/")
 
@@ -21,25 +21,27 @@ def save_setup(self,):
 
     """Save setup  """
 
-    fno = self.fno + '/setup.h5'
+    if self.save_to_disk:
 
-    file_exist(fno,overwrite=self.overwrite)
+        fno = self.fno + '/setup.h5'
 
-    h5file = h5py.File(fno, 'w')
-    h5file.create_dataset("grid/nx", data=(self.nx),dtype=int)
-    h5file.create_dataset("grid/x", data=(self.x))
-    h5file.create_dataset("grid/y", data=(self.y))
-    h5file.create_dataset("grid/wv", data=self.wv)
-    h5file.create_dataset("grid/k", data=self.kk)
-    h5file.create_dataset("grid/l", data=self.ll)
-    # h5file.create_dataset("constants/f0", data=(self.f))
-    h5file.close()
+        file_exist(fno,overwrite=self.overwrite)
+
+        h5file = h5py.File(fno, 'w')
+        h5file.create_dataset("grid/nx", data=(self.nx),dtype=int)
+        h5file.create_dataset("grid/x", data=(self.x))
+        h5file.create_dataset("grid/y", data=(self.y))
+        h5file.create_dataset("grid/wv", data=self.wv)
+        h5file.create_dataset("grid/k", data=self.kk)
+        h5file.create_dataset("grid/l", data=self.ll)
+        # h5file.create_dataset("constants/f0", data=(self.f))
+        h5file.close()
 
 def save_snapshots(self, fields=['t','q','p']):
 
     """ Save snapshots of fields """
 
-    if ( ( not (self.tc%self.tsnaps) ) & (self.save_snapshots) ):
+    if ( ( not (self.tc%self.tsnaps) ) & (self.save_to_disk) ):
 
         fno = self.fno + '/snapshots/{:015.0f}'.format(self.t)+'.h5'
 
