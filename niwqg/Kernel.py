@@ -1,9 +1,7 @@
 import numpy as np
 from numpy import pi
-import logging
-import h5py
-from numpy import pi
 import logging, os
+import h5py
 
 from Diagnostics import *
 from Saving import *
