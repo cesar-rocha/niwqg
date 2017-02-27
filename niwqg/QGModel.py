@@ -295,7 +295,6 @@ class QGModel(object):
         self.fab =  self.dt*( ( ( 2. + LR + np.exp(LR)*( -2. + LR ) )/ LR3 ).mean(axis=-1) )
         self.fc  =  self.dt*( ( ( -4. -3.*LR - LR2 + np.exp(LR)*(4.-LR) )/ LR3 ).mean(axis=-1) )
 
-
     def jacobian_psi_q(self):
         """ Compute the Jacobian between psi and q. Return in Fourier space. """
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
@@ -339,15 +338,13 @@ class QGModel(object):
     def _calc_ens(self):
         return 0.5*self.spec_var(self.qh)
 
-
     def _calc_ep_psi(self):
         """ calculates hyperviscous dissipation of QG KE """
-        return self.nu4*self.spec_var(self.wv*self.qh)
+        return -self.nu4*self.spec_var(self.wv*self.qh)
 
     def _calc_chi_q(self):
         """"  calculates hyperviscous dissipation of QG Enstrophy """
-        return self.nu4*self.spec_var(self.wv2*self.qh)
-
+        return -self.nu4*self.spec_var(self.wv2*self.qh)
 
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
@@ -385,7 +382,6 @@ class QGModel(object):
                 types = 'scalar',
                 function = (lambda self: self._calc_ke_qg())
         )
-
 
         add_diagnostic(self,'ens',
                 description='Quasigeostrophic Potential Enstrophy',

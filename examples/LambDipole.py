@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['contour.negative_linestyle'] = 'dashed'
 import numpy as np
 
-from niwqg import UnCoupledModel as Model
+from niwqg import CoupledModel as Model
 from niwqg import InitialConditions as ic
 
 plt.close('all')
@@ -44,7 +44,7 @@ tmax = 10*Te
 
 m = Model.Model(L=L,nx=nx, tmax = tmax,dt = dt,
                 m=m,N=N,f=f0, twrite=int(0.25*Tf/dt),
-                nu4=8.e8,nu4w=8.e8,use_filter=False,
+                nu4=10.e8,nu4w=10.e8,use_filter=False,
                 U =-U, tdiags=2,)
 #nu4=7.5e8,nu4w=7.5e8,use_filter=False,
 
@@ -81,6 +81,9 @@ dPE = np.gradient(PE_niw,dt)
 dKE = np.gradient(KE_qg,dt)
 diKE_niw = np.gradient(iKE_niw,dt)
 
+res_ke = dKE-(-g1-g2+ep_psi)
+res_pe = dPE-g1-g2-chi_phi
+
 fig = plt.figure(figsize=(16,9))
 lw, alp = 3.,.5
 KE0 = KE_qg[0]
@@ -102,23 +105,24 @@ plt.ylabel(r'Energy  change $[(E-E_0) \times {2}/{U_0^2} ]$')
 plt.legend(loc=3)
 
 ax = fig.add_subplot(223)
-plt.plot(time/Te,Te*g1/KE0,label=r'Refraction conversion $-\Gamma_1$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,Te*g2/KE0,label=r'Advection conversion $-\Gamma_2$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,-Te*chi_q/KE0,label=r'KE QG dissipation $-\epsilon_\psi$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,Te*(g1+g2-chi_phi)/KE0,label=r'$-(\Gamma_1+\Gamma_2+\epsilon_\psi)$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,-Te*dPE/KE0,'k--',label=r'KE QG tendency $\dot K_e$',linewidth=lw,alpha=alp)
-plt.legend(loc=2)
+plt.plot(time/Te,Te*g1/KE0,label=r'Refrac. conversion $\Gamma_r$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*g2/KE0,label=r'Adv. conversion $\Gamma_a$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*chi_phi/KE0,label=r'PE NIW diss. $\chi_\phi$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*(g1+g2+chi_phi)/KE0,label=r'$(\Gamma_r+\Gamma_a+\chi_\phi)$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*dPE/KE0,'k--',label=r'PE NIW tendency $\dot K_e$',linewidth=lw,alpha=alp)
+plt.legend(loc=3,ncol=2)
 plt.xlabel(r"Time [$t \times U_0 k_0$]")
 plt.ylabel(r'Power $[\dot E \times {2 k_0}/{U_0} ]$')
 
 ax = fig.add_subplot(224)
-plt.plot(time/Te,Te*pi/KE0,label=r'Incoherent KE NIW conversion $\Pi$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,-Te*ep_phi/KE0,label=r'KE NIW disspation $-\epsilon_\phi$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,Te*(pi-ep_phi)/KE0,label=r'$\pi-\epsilon_\phi$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,Te*diKE_niw/KE0,'k--',label=r'Incoherent NIW KE tendency',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*pi/KE0,label=r'Inc. KE NIW conversion $\Pi$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*ep_psi/KE0,label=r'KE NIW disspation $-\epsilon_\phi$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*(pi+ep_phi)/KE0,label=r'$\pi-\epsilon_\phi$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*diKE_niw/KE0,'k--',label=r'Inc. NIW KE tendency',linewidth=lw,alpha=alp)
 plt.xlabel(r"Time [$t \times U_0 k_0$]")
 plt.ylabel(r'Power $[\dot E \times {2 k_0}/{U_0} ]$')
 plt.legend(loc=3)
+
 
 stop = timeit.default_timer()
 print("Time elapsed: %3.2f seconds" %(stop - start))

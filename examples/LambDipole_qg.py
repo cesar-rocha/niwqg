@@ -68,7 +68,7 @@ dKE = np.gradient(KE_qg,dt)
 
 plt.figure(figsize=(12,6))
 lw, alp = 3.,.5
-plt.plot(time/Te,-Te*ep_psi/KE_qg[0], label=r'KE dissipation $-\epsilon_\psi$',
+plt.plot(time/Te,Te*ep_psi/KE_qg[0], label=r'KE dissipation $-\epsilon_\psi$',
             linewidth=lw,alpha=alp)
 plt.plot(time/Te,Te*dKE/KE_qg[0],'k--',label=r'KE tendency $\dot K_e$',
             linewidth=lw,alpha=alp)

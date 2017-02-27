@@ -320,15 +320,15 @@ class Kernel(object):
 
     def _calc_ep_phi(self):
         """ calculates hyperviscous dissipation of NIW KE  """
-        return self.nu4w*(np.abs(self.lapphi)**2).mean()
+        return -self.nu4w*(np.abs(self.lapphi)**2).mean()
 
     def _calc_ep_psi(self):
         """ calculates hyperviscous dissipation of QG KE """
-        return self.nu4*self.spec_var(self.wv*self.qh)
+        return -self.nu4*self.spec_var(self.wv*self.qh)
 
     def _calc_chi_q(self):
         """"  calculates hyperviscous dissipation of QG Enstrophy """
-        return self.nu4*self.spec_var(self.wv2*self.qh)
+        return -self.nu4*self.spec_var(self.wv2*self.qh)
 
     def _calc_chi_phi(self):
         """"  calculates hyperviscous dissipation of NIW PE """
@@ -337,7 +337,7 @@ class Kernel(object):
         #lapphi = self.ifft(-self.wv2*self.phih)
         #lap2phi = self.ifft((self.wv2**2)*self.phih)
         #return -0.5*self.nu4w*(lapphi*np.conj(lap2phi)).real.mean()/self.kappa2
-        return 0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2
+        return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
@@ -360,8 +360,8 @@ class Kernel(object):
         divFw = 0.5*self.hslash*(np.conj(self.phi)*self.lapphi).imag
 
         # correlations
-        self.gamma1 = -(0.5*self.q_psi*divFw).mean()/self.f
-        self.gamma2 = -0.5*self.hslash*((np.conj(self.lapphi)*J_psi_phi).real).mean()/self.f
+        self.gamma1 = (0.5*self.q_psi*divFw).mean()/self.f
+        self.gamma2 = 0.5*self.hslash*((np.conj(self.lapphi)*J_psi_phi).real).mean()/self.f
         self.pi = (0.5*self.phi.mean()*(self.q_psi*np.conj(self.phi)).mean()).imag
 
     def _calc_icke_niw(self):
