@@ -339,6 +339,16 @@ class QGModel(object):
     def _calc_ens(self):
         return 0.5*self.spec_var(self.qh)
 
+
+    def _calc_ep_psi(self):
+        """ calculates hyperviscous dissipation of QG KE """
+        return self.nu4*self.spec_var(self.wv*self.qh)
+
+    def _calc_chi_q(self):
+        """"  calculates hyperviscous dissipation of QG Enstrophy """
+        return self.nu4*self.spec_var(self.wv2*self.qh)
+
+
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
         var_dens = 2. * np.abs(ph)**2 / self.M**2
@@ -384,6 +394,19 @@ class QGModel(object):
                 function = (lambda self: 0.5*(self.q**2).mean())
         )
 
+        add_diagnostic(self, 'ep_psi',
+                description='The hyperviscous dissipation of QG kinetic energy',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_ep_psi())
+        )
+
+        add_diagnostic(self, 'chi_q',
+                description='The hyperviscous dissipation of QG kinetic energy',
+                units=r'$s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_chi_q())
+        )
 
     def _calc_derived_fields(self):
         """Should be implemented by subclass."""

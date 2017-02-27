@@ -163,13 +163,9 @@ class Model(Kernel.Kernel):
         """ From qh compute ph and compute velocity. """
 
         # the wavy PV
-        self.phich = self.fft(np.conj(self.phi))
         self.phi2 = np.abs(self.phi)**2
-        self.jacph = self.jacobian_phic_phi()
         self.gphi2h = -self.wv2*self.fft(self.phi2)
-        self.qwh = (0.5*self.gphi2h  + 1j*self.jacph)/self.f/2.
+        self.qwh = (0.5*self.gphi2h  + 1j*self.jacobian_phic_phi())/self.f/2.
         self.qwh *= self.filtr
         # invert for psi
         self.ph = -self.wv2i*(self.qh-self.qwh)
-        # calculate in physical space
-        self.p = self.ifft(self.ph).real

@@ -319,8 +319,25 @@ class Kernel(object):
         return 0.5*(self.q**2).mean()
 
     def _calc_ep_phi(self):
-        """ calculates dissipation of NIW KE due to hyperviscosity """
+        """ calculates hyperviscous dissipation of NIW KE  """
         return self.nu4w*(np.abs(self.lapphi)**2).mean()
+
+    def _calc_ep_psi(self):
+        """ calculates hyperviscous dissipation of QG KE """
+        return self.nu4*self.spec_var(self.wv*self.qh)
+
+    def _calc_chi_q(self):
+        """"  calculates hyperviscous dissipation of QG Enstrophy """
+        return self.nu4*self.spec_var(self.wv2*self.qh)
+
+    def _calc_chi_phi(self):
+        """"  calculates hyperviscous dissipation of NIW PE """
+        lphix, lphiy = self.ifft(-self.ik*self.wv2*self.phih),\
+                            self.ifft(-self.il*self.wv2*self.phih)
+        #lapphi = self.ifft(-self.wv2*self.phih)
+        #lap2phi = self.ifft((self.wv2**2)*self.phih)
+        #return -0.5*self.nu4w*(lapphi*np.conj(lap2phi)).real.mean()/self.kappa2
+        return 0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
@@ -443,10 +460,31 @@ class Kernel(object):
         )
 
         add_diagnostic(self, 'ep_phi',
-                description='The NIW kinetic energy dissipation due to hyper-viscosity',
+                description='The hyperviscous dissipation of NIW kinetic energy',
                 units=r'$m^2 s^{-3}$',
                 types = 'scalar',
                 function = (lambda self: self._calc_ep_phi())
+        )
+
+        add_diagnostic(self, 'ep_psi',
+                description='The hyperviscous dissipation of QG kinetic energy',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_ep_psi())
+        )
+
+        add_diagnostic(self, 'chi_q',
+                description='The hyperviscous dissipation of QG kinetic energy',
+                units=r'$s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_chi_q())
+        )
+
+        add_diagnostic(self, 'chi_phi',
+                description='The hyperviscous dissipation of NIW potential energy',
+                units=r'$s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_chi_phi())
         )
 
     def _calc_derived_fields(self):
