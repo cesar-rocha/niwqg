@@ -1,6 +1,6 @@
 # niwqg
 Code for a special class of solutions of the Xie & Vanneste (2015) coupled model
- –– the documentation is in the works.
+ in a doubly periodic domain –– the documentation is in the works.
 
 # Installation
 This software is written in *python3* and depends on *numpy* and *h5py*. I strongly
@@ -9,11 +9,19 @@ recommend the python3 pre-packaged on [Anaconda](https://www.continuum.io/downlo
 ## Obtaining niwqg
 Download or clone niwqg repository.
 
-## Installing
-Inside the root niwqg directory, install the package
+## Installing niwqg
+Inside the root niwqg directory, install the package:
 
-    python3 setup.py install
+    python setup.py install
 
 If you plan to make changes to the code, then setup the development mode
 
-    python3 setup.py develop
+    python setup.py develop
+
+# Development
+The code is under rapid development by @crocha700 as part of the project
+``Stimulated Loss of Balance'' (SLOB) with @glwagner and @wry55.
+
+Guidelines for contributions will soon be posted in the documentation. For now,
+the only requirement is that contributions be submitted via pull-requested of
+a cut-off branch (not master). 
