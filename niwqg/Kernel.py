@@ -334,9 +334,6 @@ class Kernel(object):
         """"  calculates hyperviscous dissipation of NIW PE """
         lphix, lphiy = self.ifft(-self.ik*self.wv2*self.phih),\
                             self.ifft(-self.il*self.wv2*self.phih)
-        #lapphi = self.ifft(-self.wv2*self.phih)
-        #lap2phi = self.ifft((self.wv2**2)*self.phih)
-        #return -0.5*self.nu4w*(lapphi*np.conj(lap2phi)).real.mean()/self.kappa2
         return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
