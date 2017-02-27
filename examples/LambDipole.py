@@ -121,7 +121,7 @@ plt.plot(time/Te,Te*(pi+ep_phi)/KE0,label=r'$\pi-\epsilon_\phi$',linewidth=lw,al
 plt.plot(time/Te,Te*diKE_niw/KE0,'k--',label=r'Inc. NIW KE tendency',linewidth=lw,alpha=alp)
 plt.xlabel(r"Time [$t \times U_0 k_0$]")
 plt.ylabel(r'Power $[\dot E \times {2 k_0}/{U_0} ]$')
-plt.legend(loc=3)
+plt.legend(loc=1)
 
 
 stop = timeit.default_timer()
