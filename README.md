@@ -1,2 +1,2 @@
 # niwqg
-Code for a minal NIW-QG model
+Code for a minimal NIW-QG model
