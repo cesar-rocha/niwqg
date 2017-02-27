@@ -4,8 +4,8 @@ import logging
 import h5py
 from numpy import pi
 import logging, os
-from Diagnostics import *
-from Saving import *
+from .Diagnostics import *
+from .Saving import *
 
 class QGModel(object):
 
