@@ -318,6 +318,10 @@ class Kernel(object):
         """ calculates potential enstrophy """
         return 0.5*(self.q**2).mean()
 
+    def _calc_ep_phi(self):
+        """ calculates dissipation of NIW KE due to hyperviscosity """
+        return self.nu4*(np.abs(self.lapphi)**2).mean()
+
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
         var_dens = np.abs(ph)**2 / self.M**2
@@ -333,14 +337,14 @@ class Kernel(object):
         self._calc_rel_vorticity()
 
         J_psi_phi = self.u*self.phix+self.v*self.phiy
-        lapphi = np.fft.ifft2(-self.wv2*self.phih)
+        self.lapphi = np.fft.ifft2(-self.wv2*self.phih)
 
         # div fluxes
-        divFw = 0.5*self.hslash*(np.conj(self.phi)*lapphi).imag
+        divFw = 0.5*self.hslash*(np.conj(self.phi)*self.lapphi).imag
 
         # correlations
         self.gamma1 = -(0.5*self.q_psi*divFw).mean()/self.f
-        self.gamma2 = -0.5*self.hslash*((np.conj(lapphi)*J_psi_phi).real).mean()/self.f
+        self.gamma2 = -0.5*self.hslash*((np.conj(self.lapphi)*J_psi_phi).real).mean()/self.f
         self.pi = (0.5*self.phi.mean()*(self.q_psi*np.conj(self.phi)).mean()).imag
 
     def _calc_icke_niw(self):
@@ -436,6 +440,13 @@ class Kernel(object):
                 units=r'$m^2 s^{-3}$',
                 types = 'scalar',
                 function = (lambda self: self.pi)
+        )
+
+        add_diagnostic(self, 'ep_phi',
+                description='The NIW kinetic energy dissipation due to hyper-viscosity',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_ep_phi())
         )
 
     def _calc_derived_fields(self):
