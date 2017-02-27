@@ -5,6 +5,11 @@ Code for a special class of solutions of the Xie & Vanneste (2015) coupled model
 # Installation
 This software is written in `python3` and depends on `numpy` and `h5py`. I strongly
 recommend the python3 pre-packaged on [Anaconda](https://www.continuum.io/downloads).
+This package come with `numpy`. To install h5py, use Anaconda's package manager:
+```bash
+conda install h5py
+```
+
 
 ## Obtaining niwqg
 Download or clone niwqg repository.
