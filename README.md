@@ -27,8 +27,9 @@ If you plan to make changes to the code, then setup the development mode
 python setup.py develop
 ```
 # Development
-The code is under rapid development by @crocha700 as part of the project
-"Stimulated Loss of Balance" (SLOB) with @glwagner and @wry55.
+The code is under rapid development by [@crocha700](https://github.com/crocha700)
+as part of the project "Stimulated Loss of Balance" (SLOB) with
+[@glwagner](https://github.com/glwagner) and [@wry55](https://github.com/wry55).
 
 Guidelines for contributions will soon be posted in the documentation. For now,
 the only requirement is that contributions be submitted via pull-request of
