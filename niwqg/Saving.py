@@ -7,7 +7,7 @@ def init_save_snapshots(self,path):
 
     self.fno = path
 
-    if (not os.path.isdir(self.fno)) and self.save_to_disk:
+    if (not os.path.isdir(self.fno)) & self.save_to_disk:
         os.makedirs(self.fno)
         os.makedirs(self.fno+"/snapshots/")
 

@@ -31,7 +31,7 @@ class Kernel(object):
         nu4=5.e9,                   # hyperviscosity
         nu4w=5.e5,                  # hyperviscosity waves
         dealias = False,
-        save_to_disk=True,
+        save_to_disk=False,
         overwrite=True,
         tsave_snapshots=10,         # interval fro saving snapshots (in timesteps)
         tdiags=10,                  # interval for diagnostics (in timesteps)
