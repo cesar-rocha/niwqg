@@ -1,7 +1,6 @@
 Code for a special class of solutions of the Xie & Vanneste (2015) coupled model in a doubly periodic domain –– the documentation is in the works.
 
-![alt text](./docs/figs/organogram.pdf "Organogram")
-
+<img src="./docs/figs/organogram.pdf" alt="NIWQG organogram"  width="4200" height="4200">
 
 # Installation
 This software is written in `python3` and depends on `numpy` and `h5py`. I strongly
