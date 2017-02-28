@@ -2,7 +2,7 @@
  Initially laterally coherent near-inertial oscillation
     coupled with Lamb dipole.
 
- This example runs in about 1.5 min on a MacPro 2.2 GHz Intel Core i7,
+ This example runs in about 20 secs on a MacPro 2.2 GHz Intel Core i7,
     16 GB 1600 MHz DDR3.
 """
 import timeit
@@ -116,8 +116,8 @@ plt.ylabel(r'Power $[\dot E \times {2 k_0}/{U_0} ]$')
 
 ax = fig.add_subplot(224)
 plt.plot(time/Te,Te*pi/KE0,label=r'Inc. KE NIW conversion $\Pi$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,Te*ep_psi/KE0,label=r'KE NIW disspation $-\epsilon_\phi$',linewidth=lw,alpha=alp)
-plt.plot(time/Te,Te*(pi+ep_phi)/KE0,label=r'$\pi-\epsilon_\phi$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*ep_psi/KE0,label=r'KE NIW disspation $\epsilon_\phi$',linewidth=lw,alpha=alp)
+plt.plot(time/Te,Te*(pi+ep_phi)/KE0,label=r'$\pi+\epsilon_\phi$',linewidth=lw,alpha=alp)
 plt.plot(time/Te,Te*diKE_niw/KE0,'k--',label=r'Inc. NIW KE tendency',linewidth=lw,alpha=alp)
 plt.xlabel(r"Time [$t \times U_0 k_0$]")
 plt.ylabel(r'Power $[\dot E \times {2 k_0}/{U_0} ]$')
