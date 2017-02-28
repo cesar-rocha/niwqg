@@ -28,7 +28,7 @@ python setup.py develop
 ```
 
 ### Testing `niwqg`
-A test-suit is in the works. For now, you can run the examples.
+A test-suit is in the works. For now, you can run this simple [example](./examples/LambDipole_CoupledModel.ipynb).
 
 
 # Development
