@@ -21,14 +21,14 @@ Inside the root niwqg directory, install the package:
 python setup.py install
 ```
 
-If you plan to make changes to the code, then setup the development mode
+If you plan to make changes to the code, then setup the development mode:
 
 ```bash
 python setup.py develop
 ```
 
 ### Testing `niwqg`
-A test-suit is in the works. For now, you can run this simple [example](./examples/LambDipole_CoupledModel.ipynb).
+A test-suite is in the works. For now, you can run this simple [example](./examples/LambDipole_CoupledModel.ipynb).
 
 
 # Development
