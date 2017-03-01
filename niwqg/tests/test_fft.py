@@ -15,7 +15,7 @@ class QGNIWTester(unittest.TestCase):
         self.qi = randn(self.m.ny, self.m.nx)
         self.phii = randn(self.m.ny,self.m.nx)+ 1j*randn(self.m.ny,self.m.nx)
 
-    def test_forward_backward(self, rtol=1e-5):
+    def test_forward_backward(self, rtol=1e-15):
         """ Compares variable with its ifft(fft)"""
 
         qn = self.m.ifft(self.m.fft(self.qi)).real
@@ -46,7 +46,7 @@ class QGTester(unittest.TestCase):
         self.m =  QGModel.Model(use_filter=False)
         self.qi = randn(self.m.ny, self.m.nx)
 
-    def test_forward_backward(self, rtol=1e-5):
+    def test_forward_backward(self, rtol=1e-15):
         """ Compares variable with its ifft(fft)"""
 
         qn = self.m.ifft(self.m.fft(self.qi))
