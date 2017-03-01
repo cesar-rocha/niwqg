@@ -7,7 +7,7 @@ import logging, os
 from .Diagnostics import *
 from .Saving import *
 
-class QGModel(object):
+class Model(object):
 
     """" Barotropic QG model """
 

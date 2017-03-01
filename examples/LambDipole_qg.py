@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['contour.negative_linestyle'] = 'dashed'
 import numpy as np
 
-#from CoupledModel import Model
-from niwqg import QGModel as Model
+from niwqg import QGModel
 from niwqg import InitialConditions as ic
 
 plt.close('all')
@@ -37,7 +36,7 @@ tmax = 10*Te
 
 path = "128/lamb/moderate_filter"
 #path = "512/lamb/large_amp"
-m = Model.QGModel(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(0.1*Te/dt),
+m = QGModel.Model(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(0.1*Te/dt),
                     nu4=7.5e8, use_filter=False,save_to_disk=False,
                     tsave_snapshots=5,path=path,
                     U =-U, tdiags=1, beta = 0.)
