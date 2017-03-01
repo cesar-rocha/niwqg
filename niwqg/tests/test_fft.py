@@ -43,7 +43,7 @@ class QGNIWTester(unittest.TestCase):
 class QGTester(unittest.TestCase):
     """ A class for testing the QG model (rffts) """
     def setUp(self):
-        self.m =  QGModel.QGModel(use_filter=False)
+        self.m =  QGModel.Model(use_filter=False)
         self.qi = randn(self.m.ny, self.m.nx)
 
     def test_forward_backward(self, rtol=1e-5):
