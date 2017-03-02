@@ -29,8 +29,17 @@ python setup.py develop
 ```
 
 ### Testing `niwqg`
-A test-suite is in the works. For now, you can run this simple [example](./examples/LambDipole_CoupledModel.ipynb).
+Go to the testing directory:
+```bash
+cd niwqg/tests
+```
+and run all unit tests using nose:
+```bash
+nosetests
+```
 
+You can also run this simple [example](./examples/LambDipole_CoupledModel.ipynb)
+and verify the energy budget.
 
 # Development
 The code is under rapid development by [@crocha700](https://github.com/crocha700)
