@@ -91,7 +91,7 @@ class Model(object):
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
         self.shape_real = (self.ny, self.nx)
-        self.shape_cplx = (self.ny, self.nx)
+        self.shape_cplx = (self.ny, self.nx//2+1)
 
         # vorticity
         self.q  = np.zeros(self.shape_real,  self.dtype_real)
@@ -314,6 +314,7 @@ class Model(object):
         """ Initialize pv """
         self.q = q
         self.qh = self.fft(self.q)
+        self._invert()
 
     def _init_fft(self):
         self.fft =  (lambda x : np.fft.rfft2(x))
