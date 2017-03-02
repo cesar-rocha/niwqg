@@ -4,10 +4,6 @@ import unittest
 from niwqg import CoupledModel
 from niwqg import QGModel
 
-def relative_error(var1,var2):
-    diffvar = np.abs(var1-var2)
-    return max(diffvar/var1,diffvar/var2).real
-
 class QGNIWTester(unittest.TestCase):
     """ A class for testing the QGNIW kernel (real and complex 2d ffts)
         Note: 1d plane wave pass test with machine precision
