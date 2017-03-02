@@ -39,7 +39,7 @@ class QGTester(unittest.TestCase):
     def setUp(self):
         self.m =  QGModel.Model(use_filter=False)
         k, l  = 2*np.pi*5/self.m.L, 2*np.pi*9/self.m.L
-        self.m.set_q(np.sin(k*self.m.x + l*self.m.x))
+        self.m.set_q(np.sin(k*self.m.x + l*self.m.y))
 
     def test_jacobian(self, rtol=1e-12):
         """ Jacobian must be zero for plane waves """
