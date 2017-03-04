@@ -104,3 +104,10 @@ class Model(Kernel.Kernel):
         """ From qh compute ph and compute velocity. """
 
         self.ph = -self.wv2i*self.qh
+
+
+    def _initialize_class_diagnostics(self):
+        pass
+
+    def _calc_class_derived_fields(self):
+        pass

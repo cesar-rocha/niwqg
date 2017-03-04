@@ -1,5 +1,6 @@
 import numpy as np
 from . import Kernel
+from .Diagnostics import *
 
 class Model(Kernel.Kernel):
     """ A subclass that represents the YBJ-QG coupled model """
@@ -169,3 +170,40 @@ class Model(Kernel.Kernel):
         self.qwh *= self.filtr
         # invert for psi
         self.ph = -self.wv2i*(self.qh-self.qwh)
+
+    def _calc_ke_qg_decomp(self):
+        self.phq = -self.wv2i*self.qh
+        self.ke_qg_q = 0.5*self.spec_var(self.wv*self.phq)
+
+        self.phw = self.wv2i*self.qwh
+        self.ke_qg_w = 0.5*self.spec_var(self.wv*self.phw)
+
+        self.uq, self.vq = self.ifft(-self.il*self.phq).real, self.ifft(self.ik*self.phq).real
+        self.uw, self.vw = self.ifft(-self.il*self.phw).real, self.ifft(self.ik*self.phw).real
+        self.ke_qg_qw = (self.uq*self.uw).mean() + (self.vq*self.vw).mean()
+
+    def _initialize_class_diagnostics(self):
+
+        add_diagnostic(self, 'ke_qg_q',
+                description='Quasigeostrophic Kinetic Energy, q-flow',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.ke_qg_q)
+        )
+
+        add_diagnostic(self, 'ke_qg_w',
+                description='Quasigeostrophic Kinetic Energy, w-flow',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.ke_qg_w)
+        )
+
+        add_diagnostic(self, 'ke_qg_qw',
+                description='Quasigeostrophic Kinetic Energy, cross-term q-w',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.ke_qg_qw)
+        )
+
+    def _calc_class_derived_fields(self):
+        self._calc_ke_qg_decomp()
