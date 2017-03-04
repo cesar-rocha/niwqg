@@ -180,3 +180,10 @@ class Model(Kernel.Kernel):
         self.ph = -self.wv2i*(self.qh-self.qwh)
         # calculate in physical space
         self.p = self.ifft(self.ph).real
+
+
+    def _initialize_class_diagnostics(self):
+        pass
+
+    def _calc_class_derived_fields(self):
+        pass

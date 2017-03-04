@@ -366,9 +366,14 @@ class Kernel(object):
         self.cke_niw = 0.5*(np.abs(self.phi.mean())**2)
         self.ike_niw = self.ke_niw-self.cke_niw
 
-    def _initialize_diagnostics(self):
 
+    def _initialize_diagnostics(self):
         self.diagnostics = dict()
+        self._initialize_kernel_diagnostics()
+        self._initialize_class_diagnostics()
+
+    def _initialize_kernel_diagnostics(self):
+
 
         add_diagnostic(self,'time',
                 description='Time',
@@ -485,6 +490,9 @@ class Kernel(object):
         )
 
     def _calc_derived_fields(self):
-        """Should be implemented by subclass."""
+        self._calc_kernel_derived_fields()
+        self._calc_class_derived_fields()
+
+    def _calc_kernel_derived_fields(self):
         self._calc_energy_conversion()
         self._calc_icke_niw()
