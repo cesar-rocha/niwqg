@@ -126,6 +126,9 @@ class Kernel(object):
         while(self.t < self.tmax):
             self._step_forward()
 
+        if self.save_to_disk:
+            save_diagnostics(self)
+
     def _step_forward(self):
 
         self._step_etdrk4()

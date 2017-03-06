@@ -59,7 +59,7 @@ def save_snapshots(self, fields=['t','q','p']):
     else:
         pass
 
-def _save_diagnostics(self):
+def save_diagnostics(self):
 
     """ Save diagnostics """
 
@@ -69,7 +69,7 @@ def _save_diagnostics(self):
 
     h5file = h5py.File(fno, 'w')
 
-    for diagnostic in self.diagnostics_list:
-        h5file.create_dataset(diagnostic, data=eval("self."+diagnostic))
+    for key in self.diagnostics.keys():
+        h5file.create_dataset(key, data=(self.diagnostics[key]['value']))
 
     h5file.close()
