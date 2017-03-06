@@ -45,7 +45,7 @@ tmax = 10*Te
 m = Model.Model(L=L,nx=nx, tmax = tmax,dt = dt,
                 m=m,N=N,f=f0, twrite=int(0.25*Tf/dt),
                 nu4=10.e8,nu4w=10.e8,use_filter=False,
-                U =-U, tdiags=2,save_to_disk=True)
+                U =-U, tdiags=2,save_to_disk=False)
 #nu4=7.5e8,nu4w=7.5e8,use_filter=False,
 
 # initial conditions
