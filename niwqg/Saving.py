@@ -63,7 +63,7 @@ def save_diagnostics(self):
 
     """ Save diagnostics """
 
-    fno = self.fno + 'diagnostics.h5'
+    fno = self.fno + '/diagnostics.h5'
 
     file_exist(fno,overwrite=self.overwrite)
 
