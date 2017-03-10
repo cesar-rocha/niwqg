@@ -82,14 +82,14 @@ class Kernel(object):
         self._initialize_grid()
         self._allocate_variables()
         self._initialize_filter()
-        self._init_etdrk4()
+        self._initialize_etdrk4()
         self._initialize_time()
 
-        init_save_snapshots(self,self.path)
+        initialize_save_snapshots(self,self.path)
         save_setup(self,)
 
         # fft
-        self._init_fft()
+        self._initialize_fft()
 
         # diagnostics
         self._initialize_diagnostics()
@@ -228,7 +228,7 @@ class Kernel(object):
         raise NotImplementedError(
             'needs to be implemented by Model subclass')
 
-    def _init_etdrk4(self):
+    def _initialize_etdrk4(self):
 
         """ This performs pre-computations for the Expotential Time Differencing
             Fourth Order Runge Kutta time stepper. The linear part is calculated
@@ -286,7 +286,7 @@ class Kernel(object):
         self.phi = phi
         self.phih = self.fft(self.phi)
 
-    def _init_fft(self):
+    def _initialize_fft(self):
         self.fft =  (lambda x : np.fft.fft2(x))
         self.ifft = (lambda x : np.fft.ifft2(x))
 

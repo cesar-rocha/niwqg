@@ -3,7 +3,7 @@
 import os
 import h5py
 
-def init_save_snapshots(self,path):
+def initialize_save_snapshots(self,path):
 
     self.fno = path
 

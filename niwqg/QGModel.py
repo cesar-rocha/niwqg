@@ -72,17 +72,19 @@ class Model(object):
         self._initialize_grid()
         self._allocate_variables()
         self._initialize_filter()
-        self._init_etdrk4()
+        self._initialize_etdrk4()
         self._initialize_time()
 
         # initialize path to save
-        init_save_snapshots(self, self.path)
+        initialize_save_snapshots(self, self.path)
         save_setup(self, )
 
         self.cflmax = .5
 
         # fft
-        self._init_fft()
+        self._initialize_fft()
+
+        # diagnostics
         self._initialize_diagnostics()
 
 
@@ -274,7 +276,7 @@ class Model(object):
         # calcuate q
         self.q = self.ifft(self.qh).real
 
-    def _init_etdrk4(self):
+    def _initialize_etdrk4(self):
 
         """ This performs pre-computations for the Expotential Time Differencing
             Fourth Order Runge Kutta time stepper. The linear part is calculated
@@ -327,7 +329,7 @@ class Model(object):
         self.qh = self.fft(self.q)
         self._invert()
 
-    def _init_fft(self):
+    def _initialize_fft(self):
         self.fft =  (lambda x : np.fft.rfft2(x))
         self.ifft = (lambda x : np.fft.irfft2(x))
 
