@@ -85,6 +85,7 @@ class Model(object):
         self._init_fft()
         self._initialize_diagnostics()
 
+
     def _allocate_variables(self):
         """ Allocate variables in memory """
 
@@ -125,9 +126,16 @@ class Model(object):
 
     def run(self):
         """Run the model forward without stopping until the end."""
+
+        # save initial conditions
+        if self.save_to_disk:
+            save_snapshots(self,fields=['t','q','p'])
+
+        # run the model
         while(self.t < self.tmax):
             self._step_forward()
 
+        # save diagnostics
         if self.save_to_disk:
             save_diagnostics(self)
 

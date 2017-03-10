@@ -94,6 +94,7 @@ class Kernel(object):
         # diagnostics
         self._initialize_diagnostics()
 
+
     def _allocate_variables(self):
         """ Allocate variables in memory """
 
@@ -123,9 +124,16 @@ class Kernel(object):
 
     def run(self):
         """Run the model forward without stopping until the end."""
+
+        # save initial conditions
+        if self.save_to_disk:
+            save_snapshots(self,fields=['t','q','phi'])
+
+        # run the model
         while(self.t < self.tmax):
             self._step_forward()
 
+        # save diagnostics
         if self.save_to_disk:
             save_diagnostics(self)
 
