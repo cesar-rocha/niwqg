@@ -129,9 +129,9 @@ class Model(object):
 
         # save initial conditions
         if self.save_to_disk:
-            save_snapshots(self,fields=['t','q','phi'])
+            save_snapshots(self,fields=['t','q','p'])
 
-        # run the model 
+        # run the model
         while(self.t < self.tmax):
             self._step_forward()
 
