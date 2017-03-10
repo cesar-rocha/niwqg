@@ -93,7 +93,7 @@ class Model(Kernel.Kernel):
         # calcuate q
         self.q = self.ifft(self.qh).real
 
-    def _init_etdrk4(self):
+    def _initialize_etdrk4(self):
 
         """ This performs pre-computations for the Expotential Time Differencing
             Fourth Order Runge Kutta time stepper. The linear part is calculated
