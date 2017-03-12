@@ -307,6 +307,7 @@ class Kernel(object):
 
     def _calc_ke_qg(self):
         return 0.5*self.spec_var(self.wv*self.ph)
+        #return 0.5*(self.u**2+self.v**2).mean()
 
     def _calc_ke_niw(self):
         return 0.5*(np.abs(self.phi)**2).mean()
@@ -336,6 +337,8 @@ class Kernel(object):
     def _calc_ep_psi(self):
         """ calculates hyperviscous dissipation of QG KE """
         return -self.nu4*self.spec_var(self.wv*self.qh)
+        #qx, qy = self.ifft(self.ik*self.qh), self.ifft(self.il*self.qh)
+        #return -self.nu4*(qx**2 + qy**2).mean()
 
     def _calc_chi_q(self):
         """"  calculates hyperviscous dissipation of QG Enstrophy """
