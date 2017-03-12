@@ -45,7 +45,7 @@ tmax = 10*Te
 
 m = Model.Model(L=L,nx=nx, tmax = tmax,dt = dt,
                 m=m,N=N,f=f0, twrite=int(0.25*Tf/dt),
-                nu4=10.e8,nu4w=10.e8,use_filter=False,
+                nu4=10.e11,nu4w=10.e8,use_filter=False,
                 U =-U, tdiags=2,save_to_disk=True)
 #nu4=7.5e8,nu4w=7.5e8,use_filter=False,
 
@@ -142,3 +142,9 @@ RES_KE = 1+(G1_Ke+G2_Ke+EP_Ke)
 
 stop = timeit.default_timer()
 print("Time elapsed: %3.2f seconds" %(stop - start))
+
+
+from pyspec import spectrum
+
+dx = L/N
+specq = spectrum.TWODimensional_spec(m.q,d1=dx,d2=dx)

@@ -107,14 +107,14 @@ class Model(Kernel.Kernel):
         #
 
         # the exponent for the linear part
-        self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)
-        self.c += -self.nu4*self.wv4 - 1j*self.k*self.U
+        self.c = np.zeros((self.nl,self.nk),self.dtype_cplx) - 1j*self.k*self.U
+        self.c += -self.nu4*self.wv4
         ch = self.c*self.dt
         self.expch = np.exp(ch)
         self.expch_h = np.exp(ch/2.)
         self.expch2 = np.exp(2.*ch)
 
-        M = 32.  # number of points for line integral in the complex plane
+        M = 32  # number of points for line integral in the complex plane
         rho = 1.  # radius for complex integration
         r = rho*np.exp(2j*np.pi*((np.arange(1.,M+1))/M)) # roots for integral
         LR = ch[...,np.newaxis] + r[np.newaxis,np.newaxis,...]
