@@ -114,7 +114,7 @@ class Model(Kernel.Kernel):
         self.expch_h = np.exp(ch/2.)
         self.expch2 = np.exp(2.*ch)
 
-        M = 32  # number of points for line integral in the complex plane
+        M = 32    # number of points for line integral in the complex plane
         rho = 1.  # radius for complex integration
         r = rho*np.exp(2j*np.pi*((np.arange(1.,M+1))/M)) # roots for integral
         LR = ch[...,np.newaxis] + r[np.newaxis,np.newaxis,...]
@@ -148,7 +148,10 @@ class Model(Kernel.Kernel):
     def jacobian_phic_phi(self):
         """ Compute the Jacobian phix and phiy. """
         self.phix, self.phiy = self.ifft(self.ik*self.phih), self.ifft(self.il*self.phih)
-        return self.fft(np.conj(self.phix)*self.phiy - np.conj(self.phiy)*self.phix)
+        return self.fft((1j*(np.conj(self.phix)*self.phiy - np.conj(self.phiy)*self.phix)).real)
+        #phic = np.conj(self.phi)
+        #return self.ik*self.fft(phic*self.phiy) - self.il*self.fft(phic*self.phix)
+
 
     def jacobian_psi_phi(self):
         """ Compute the Jacobian phix and phiy. """
@@ -166,10 +169,31 @@ class Model(Kernel.Kernel):
         # the wavy PV
         self.phi2 = np.abs(self.phi)**2
         self.gphi2h = -self.wv2*self.fft(self.phi2)
-        self.qwh = (0.5*self.gphi2h  + 1j*self.jacobian_phic_phi())/self.f/2.
-        self.qwh *= self.filtr
+        self.qwh = (0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f/2.
+
+        #self._calc_wave_qg_flow()
+        #self._calc_vorticity_qg_flow()
+
+        #self.ph = self.pvh-self.pwh
+
         # invert for psi
-        self.ph = -self.wv2i*(self.qh-self.qwh)
+        self.pw = self.ifft(-self.wv2i*self.qwh).real
+        self.pv = self.ifft(-self.wv2i*self.qh).real
+        self.p = self.pv-self.pw
+        self.ph = self.fft(self.p)
+        #self.ph = -self.wv2i*self.qh -self.pw
+        #self.phi2h = self.fft(self.phi2-self.phi2.mean())
+        #self.ph = -self.wv2i*(self.qh -  0.5*self.jacobian_phic_phi()/self.f) - 0.25*self.phi2h/self.f
+
+    def _calc_wave_qg_flow(self):
+        # the wavy PV
+        self.phi2 = np.abs(self.phi)**2
+        self.gphi2h = -self.wv2*self.fft(self.phi2)
+        self.qwh = (0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f/2.
+        self.pwh = self.ifft(-self.wv2i*self.qwh).real
+
+    def _calc_vorticity_qg_flow(self):
+        self.pvh = self.ifft(-self.wv2i*self.qh).real
 
     def _calc_ke_qg_decomp(self):
         self.phq = -self.wv2i*self.qh

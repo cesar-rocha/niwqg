@@ -259,6 +259,7 @@ class Kernel(object):
     def _calc_rel_vorticity(self):
         """ from psi compute relative vorticity """
         self.qh_psi = -self.wv2*self.ph
+        #self.qh_psi = self.qh-self.qwh
         self.q_psi = self.ifft(self.qh_psi).real
 
     def _calc_strain(self):
@@ -336,7 +337,9 @@ class Kernel(object):
 
     def _calc_ep_psi(self):
         """ calculates hyperviscous dissipation of QG KE """
-        return -self.nu4*self.spec_var(self.wv*self.qh)
+        #return -self.nu4*self.spec_var(self.wv*self.qh)
+        lap2psi = self.ifft(self.wv4*self.ph).real
+        return self.nu4*(self.q*lap2psi).mean()
         #qx, qy = self.ifft(self.ik*self.qh), self.ifft(self.il*self.qh)
         #return -self.nu4*(qx**2 + qy**2).mean()
 

@@ -45,8 +45,8 @@ tmax = 10*Te
 
 m = Model.Model(L=L,nx=nx, tmax = tmax,dt = dt,
                 m=m,N=N,f=f0, twrite=int(0.25*Tf/dt),
-                nu4=10.e11,nu4w=10.e8,use_filter=False,
-                U =-U, tdiags=2,save_to_disk=True)
+                nu4=2.5e10,nu4w=5e7,use_filter=False,
+                U =-U, tdiags=1,save_to_disk=True)
 #nu4=7.5e8,nu4w=7.5e8,use_filter=False,
 
 # initial conditions
@@ -133,18 +133,59 @@ KE, PE = KE_qg[i-1]-KE_qg[0], PE_niw[i-1]-PE_niw[0]
 G1, G2 = integrate.simps(y=g1[:i],x=time[:i]),  integrate.simps(y=g2[:i],x=time[:i])
 G1_Pw, G2_Pw = G1/PE, G2/PE
 G1_Ke, G2_Ke = G1/KE, G2/KE
+G_Ke = G1_Ke+G2_Ke
 CHI_Pw = integrate.simps(y=chi_phi[:i],x=time[:i])/PE
 EP_Ke = -integrate.simps(y=ep_psi[:i],x=time[:i])/KE
 
 RES_PE = 1-(G1_Pw+G2_Pw+CHI_Pw)
 RES_KE = 1+(G1_Ke+G2_Ke+EP_Ke)
 
+res = dKE+dPE+ep_psi+chi_phi
+RES =  integrate.simps(y=res,x=time)/KE
 
 stop = timeit.default_timer()
 print("Time elapsed: %3.2f seconds" %(stop - start))
 
-
 from pyspec import spectrum
 
-dx = L/N
+dx = L/nx
 specq = spectrum.TWODimensional_spec(m.q,d1=dx,d2=dx)
+specqpsi = spectrum.TWODimensional_spec(m.q_psi,d1=dx,d2=dx)
+
+lapq = m.ifft(-m.wv2*m.qh).real
+specep = spectrum.TWODimensional_spec(m.nu4*m.q_psi*lapq,d1=dx,d2=dx)
+
+lap2phi =  m.ifft(-m.wv4*m.phih)
+lapphi =  m.ifft(-m.wv2*m.phih)
+specchi = spectrum.TWODimensional_spec(m.nu4w*lapphi*phi*lap2phi,d1=dx,d2=dx)
+
+
+fig = plt.figure(figsize=(12,10))
+
+ax = fig.add_subplot(221)
+ax.loglog(specq.ki/k0,specq.ispec)
+ax.set_title(r"Potential Enstrophy, $q^2$")
+
+ax2 = fig.add_subplot(222)
+ax2.loglog(specqpsi.ki/k0,specqpsi.ispec)
+ax2.set_title(r"Enstrophy, $(\nabla^2 \psi)^2$")
+
+ax3 = fig.add_subplot(223)
+ax3.loglog(specep.ki/k0,specep.ispec)
+ax3.set_title(r"q-diss. $\nu_e (\nabla^2 q) (\nabla^2 \psi) $")
+
+ax4 = fig.add_subplot(224)
+ax4.loglog(specchi.ki/k0,specchi.ispec)
+ax4.set_title(r"phi-diss. $\nu_w |\nabla(\nabla^2\phi)|^2$")
+
+
+# p, pw, and ppsi
+p = m.ifft(m.ph).real
+pw = m.ifft(m.pwh).real
+ppsi = m.ifft(-m.wv2i*m.qh_psi).real
+ppsi_2 = p-pw
+pw_2 = p - ppsi
+pw_3 = m.ifft(-m.wv2i*m.qwh).real
+
+
+#ppsi = p - pw
