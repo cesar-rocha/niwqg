@@ -50,7 +50,7 @@ m = Model.Model(L=L,nx=nx, tmax = tmax,dt = dt,
 # initial conditions
 q = ic.LambDipole(m, U=U,R = 2*np.pi/k0)
 phi = (np.ones_like(q) + 1j)*u0/np.sqrt(2)
-#phi = ic.WavePacket(m, k=k0*2, l=0, R=2*np.pi/k0)
+
 m.set_q(q)
 m.set_phi(phi)
 
