@@ -190,18 +190,3 @@ ax3.set_title(r"q-diss. $\nu_e (\nabla^2 q) (\nabla^2 \psi) $")
 ax4 = fig.add_subplot(224)
 ax4.loglog(specchi.ki[:imax]/k0,specchi.ispec[:imax])
 ax4.set_title(r"phi-diss. $\nu_w |\nabla(\nabla^2\phi)|^2$")
-
-# p, pw, and ppsi
-#p = m.ifft(m.ph).real
-#pw = m.ifft(-m.phw).real
-# p, pw, pv = m.p, m.pw, m.pv
-# ppsi = m.ifft(-m.wv2i*m.qh_psi).real
-# qh_psi = m.q-m.qwh
-# ppsi = m.ifft(-m.wv2i*qh_psi).real
-#
-# pv_2 = p-pw
-# pw_2 = p - pv_2
-# pw_3 = m.ifft(-m.wv2i*m.qwh).real
-
-
-#ppsi = p - pw
