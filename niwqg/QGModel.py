@@ -14,23 +14,25 @@ class Model(object):
     def __init__(
         self,
         # grid size parameters
-        nx=64,                     # grid resolution
+        nx=128,                     # grid resolution
         ny=None,
-        L=1e6,                     # domain size is L [m]
+        L=5e5,                     # domain size is L [m]
         # timestepping parameters
-        dt=7200.,                   # numerical timestep
+        dt=10000.,                   # numerical timestep
         twrite=1000.,               # interval for cfl and ke writeout (in timesteps)
-        tswrite=2,
-        tmax=1576800000.,           # total time of integration
+        tswrite=10,
+        tmax=250000.,           # total time of integration
         tavestart=315360000.,       # start time for averaging
         taveint=86400.,             # time interval used for summation in longterm average in seconds
         use_filter = True,
         # constants
         U = .0,                     # uniform zonal flow
         nu4=5.e9,                   # hyperviscosity
+        nu = 0,                     # viscosity
+        mu = 0,                     # linear drag
         beta = 0,                   # beta
         dealias = False,
-        save_to_disk=True,
+        save_to_disk=False,
         overwrite=True,
         tsave_snapshots=10,  # in snapshots
         tdiags = 10,  # diagnostics
@@ -58,6 +60,8 @@ class Model(object):
         self.U = U
         self.beta = beta
         self.nu4 = nu4
+        self.nu = nu
+        self.mu = mu
 
         # saving stuff
         self.save_to_disk = save_to_disk
@@ -250,22 +254,24 @@ class Model(object):
     def _step_etdrk4(self):
         """ march the system forward using a ETDRK4 scheme """
 
-
-        # q-equation
         self.qh0 = self.qh.copy()
         Fn0 = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh0 + Fn0*self.Qh)*self.filtr
         self.qh1 = self.qh.copy()
 
         self._invert()
+        k1 = self._calc_ep_psi()
+
         Fna = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
         self._invert()
+        k2 = self._calc_ep_psi()
         Fnb = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
         self._invert()
+        k3 = self._calc_ep_psi()
         Fnc = -self.jacobian_psi_q()
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
@@ -275,6 +281,10 @@ class Model(object):
 
         # calcuate q
         self.q = self.ifft(self.qh).real
+
+        k4 = self._calc_ep_psi()
+        self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
+
 
     def _initialize_etdrk4(self):
 
@@ -290,7 +300,7 @@ class Model(object):
 
         # the exponent for the linear part
         self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)
-        self.c += -self.nu4*self.wv4 - 1j*self.k*self.U
+        self.c += -self.nu4*self.wv4 - self.nu*self.wv2 - self.mu - 1j*self.k*self.U
         self.c += self.beta*self.ik*self.wv2i
         ch = self.c*self.dt
         self.expch = np.exp(ch)
@@ -328,6 +338,7 @@ class Model(object):
         self.q = q
         self.qh = self.fft(self.q)
         self._invert()
+        self.Ke = self._calc_ke_qg()
 
     def _initialize_fft(self):
         self.fft =  (lambda x : np.fft.rfft2(x))
@@ -348,13 +359,18 @@ class Model(object):
 
     def _calc_ke_qg(self):
         return 0.5*self.spec_var(self.wv*self.ph)
+        #self.u, self.v = self.ifft(-self.il*self.ph), self.ifft(self.ik*self.ph)
+        #return 0.5*(self.u**2+self.v**2).mean()
 
     def _calc_ens(self):
         return 0.5*self.spec_var(self.qh)
 
     def _calc_ep_psi(self):
         """ calculates hyperviscous dissipation of QG KE """
-        return -self.nu4*self.spec_var(self.wv*self.qh)
+        lap2psi = self.ifft(self.wv4*self.ph)
+        lapq = self.ifft(-self.wv2*self.qh)
+        return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
+                + self.mu*(self.p*self.q).mean()
 
     def _calc_chi_q(self):
         """"  calculates hyperviscous dissipation of QG Enstrophy """
@@ -396,6 +412,13 @@ class Model(object):
                 units=r'm^2 s^{-2}',
                 types = 'scalar',
                 function = (lambda self: self._calc_ke_qg())
+        )
+
+        add_diagnostic(self, 'Ke',
+                description='Quasigeostrophic Kinetic Energy, from energy equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Ke)
         )
 
         add_diagnostic(self,'ens',

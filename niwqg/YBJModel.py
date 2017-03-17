@@ -78,7 +78,8 @@ class Model(Kernel.Kernel):
 
         # the exponent for the linear part
         self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)  -1j*self.k*self.U
-        self.c += -self.nu4w*self.wv4 - 0.5j*self.f*(self.wv2/self.kappa2)
+        self.c += -self.nu4w*self.wv4 - 0.5j*self.f*(self.wv2/self.kappa2)\
+                        - self.nuw*self.wv2 - self.muw        
         ch = self.c*self.dt
         self.expchw = np.exp(ch)
         self.expch_hw = np.exp(ch/2.)
