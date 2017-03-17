@@ -45,9 +45,7 @@ tmax = 10*Te
 m = Model.Model(L=L,nx=nx, tmax = tmax,dt = dt,
                 m=m,N=N,f=f0, twrite=int(1*Tf/dt),
                 nu4=5e11,nu4w=0e10, nu=20,nuw=50e0, mu=0.e-7,muw=0e-7,use_filter=False,
-                U =-U, tdiags=1,save_to_disk=True, dealias=False,
-                path="phidiss/")
-#nu4=7.5e8,nu4w=7.5e8,use_filter=False,
+                U =-U, tdiags=1,save_to_disk=False, dealias=False,)
 
 # initial conditions
 q = ic.LambDipole(m, U=U,R = 2*np.pi/k0)
