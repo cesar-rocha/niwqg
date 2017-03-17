@@ -13,25 +13,25 @@ class Kernel(object):
     def __init__(
         self,
         # grid size parameters
-        nx=64,                     # grid resolution
+        nx=128,                     # grid resolution
         ny=None,
-        L=1e6,                     # domain size is L [m]
+        L=5e5,                     # domain size is L [m]
         # timestepping parameters
-        dt=7200.,                   # numerical timestep
+        dt=10000.,                   # numerical timestep
         twrite=1000.,               # interval for cfl and ke writeout (in timesteps)
-        tmax=1576800000.,           # total time of integration
+        tmax=250000.,           # total time of integration
         use_filter = True,
         cflmax = 0.8,               # largest CFL allowed
         # constants
         U = .0,                     # uniform zonal flow
-        f = 1.,                     # coriolis parameter (not necessary for two-layer model
-        N = 1.,                     # buoyancy frequency
-        m = 1.,                     # vertical wavenumber
+        f = 1.e-4,                     # coriolis parameter (not necessary for two-layer model
+        N = 0.01,                     # buoyancy frequency
+        m = 0.025,                     # vertical wavenumber
         g= 9.81,                    # acceleration due to gravity
         nu4=0,                   # hyperviscosity
         nu4w=0,                  # hyperviscosity waves
-        nu=0,                   #  viscosity
-        nuw=0,                  #  viscosity waves
+        nu=20,                   #  viscosity
+        nuw=50.,                  #  viscosity waves
         mu=0,                   #  viscosity
         muw=0,                  #  viscosity waves
         dealias = False,
