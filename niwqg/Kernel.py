@@ -233,8 +233,86 @@ class Kernel(object):
     def _step_etdrk4(self):
         """ march the system forward using a ETDRK4 scheme """
 
-        raise NotImplementedError(
-            'needs to be implemented by Model subclass')
+        self._calc_energy_conversion()
+        k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p1 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a1 = self._calc_ep_phi()
+
+        # q-equation
+        self.qh0 = self.qh.copy()
+        Fn0 = -self.jacobian_psi_q()
+        self.qh = (self.expch_h*self.qh0 + Fn0*self.Qh)*self.filtr
+        self.qh1 = self.qh.copy()
+
+        # phi-equation
+        self.phih0 = self.phih.copy()
+        Fn0w = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        self.phih = (self.expch_hw*self.phih0 + Fn0w*self.Qhw)*self.filtr
+        self.phih1 = self.phih.copy()
+
+        # q-equation
+        self.phi = self.ifft(self.phih)
+        self._invert()
+        self._calc_rel_vorticity()
+
+        self._calc_energy_conversion()
+        k2 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p2 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a2 = self._calc_ep_phi()
+
+        Fna = -self.jacobian_psi_q()
+        self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
+
+        # phi-equation
+        Fnaw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        self.phih = (self.expch_hw*self.phih0 + Fnaw*self.Qhw)*self.filtr
+
+        # q-equation
+        self.phi = self.ifft(self.phih)
+        self._invert()
+        self._calc_rel_vorticity()
+
+        self._calc_energy_conversion()
+        k3 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p3 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a3 = self._calc_ep_phi()
+
+        Fnb = -self.jacobian_psi_q()
+        self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
+
+        # phi-equation
+        Fnbw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        self.phih = (self.expch_hw*self.phih1 + ( 2.*Fnbw - Fn0w )*self.Qhw)*self.filtr
+
+        # q-equation
+        self.phi = self.ifft(self.phih)
+        self._invert()
+        self._calc_rel_vorticity()
+
+        self._calc_energy_conversion()
+        k4 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p4 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a4 = self._calc_ep_phi()
+
+        Fnc = -self.jacobian_psi_q()
+        self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
+                  + Fnc*self.fc)*self.filtr
+
+        # phi-equation
+        Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        self.phih = (self.expchw*self.phih0 + Fn0w*self.f0w +  2.*(Fnaw+Fnbw)*self.fabw\
+                  + Fncw*self.fcw)*self.filtr
+
+
+        self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
+        self.Pw += self.dt*(p1 + 2*(p2+p3) + p4)/6.
+        self.Kw += self.dt*(a1 + 2*(a2+a3) + a4)/6.
+
+        # invert
+        self.phi = self.ifft(self.phih)
+        self._invert()
+        self._calc_rel_vorticity()
+
 
     def _initialize_etdrk4(self):
 
@@ -244,19 +322,66 @@ class Kernel(object):
             See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
                 Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005. """
 
-        raise NotImplementedError(
-            'needs to be implemented by Model subclass')
+
+        #
+        # coefficients for q-equation
+        #
+
+        # the exponent for the linear part
+        self.c = np.zeros((self.nl,self.nk),self.dtype_cplx) - 1j*self.k*self.U
+        self.c += -self.nu4*self.wv4 - self.nu*self.wv2 - self.mu
+        ch = self.c*self.dt
+        self.expch = np.exp(ch)
+        self.expch_h = np.exp(ch/2.)
+        self.expch2 = np.exp(2.*ch)
+
+        M = 32    # number of points for line integral in the complex plane
+        rho = 1.  # radius for complex integration
+        r = rho*np.exp(2j*np.pi*((np.arange(1.,M+1))/M)) # roots for integral
+        LR = ch[...,np.newaxis] + r[np.newaxis,np.newaxis,...]
+        LR2 = LR*LR
+        LR3 = LR2*LR
+        self.Qh   =  self.dt*(((np.exp(LR/2.)-1.)/LR).mean(axis=-1))
+        self.f0  =  self.dt*( ( ( -4. - LR + ( np.exp(LR)*( 4. - 3.*LR + LR2 ) ) )/ LR3 ).mean(axis=-1) )
+        self.fab =  self.dt*( ( ( 2. + LR + np.exp(LR)*( -2. + LR ) )/ LR3 ).mean(axis=-1) )
+        self.fc  =  self.dt*( ( ( -4. -3.*LR - LR2 + np.exp(LR)*(4.-LR) )/ LR3 ).mean(axis=-1) )
+
+        #
+        # coefficients for phi-equation
+        #
+
+        # the exponent for the linear part
+        self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)  -1j*self.k*self.U
+        self.c += -self.nu4w*self.wv4 - 0.5j*self.f*(self.wv2/self.kappa2)\
+                        - self.nuw*self.wv2 - self.muw
+        ch = self.c*self.dt
+        self.expchw = np.exp(ch)
+        self.expch_hw = np.exp(ch/2.)
+        self.expch2w = np.exp(2.*ch)
+
+        LR = ch[...,np.newaxis] + r[np.newaxis,np.newaxis,...]
+        LR2 = LR*LR
+        LR3 = LR2*LR
+        self.Qhw   =  self.dt*(((np.exp(LR/2.)-1.)/LR).mean(axis=-1))
+        self.f0w  =  self.dt*( ( ( -4. - LR + ( np.exp(LR)*( 4. - 3.*LR + LR2 ) ) )/ LR3 ).mean(axis=-1) )
+        self.fabw =  self.dt*( ( ( 2. + LR + np.exp(LR)*( -2. + LR ) )/ LR3 ).mean(axis=-1) )
+        self.fcw  =  self.dt*( ( ( -4. -3.*LR - LR2 + np.exp(LR)*(4.-LR) )/ LR3 ).mean(axis=-1) )
+
 
     def jacobian_psi_phi(self):
         """ Compute the Jacobian phix and phiy. """
-        raise NotImplementedError(
-            'needs to be implemented by Model subclass')
+        jach = self.fft( (self.u*self.phix + self.v*self.phiy) )
+        jach[0,0] = 0
+        return jach
 
     def jacobian_psi_q(self):
         """ Compute the Jacobian between psi and q. Return in Fourier space. """
-
-        raise NotImplementedError(
-            'needs to be implemented by Model subclass')
+        self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
+        q = self.ifft(self.qh).real
+        jach = self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
+        jach[0,0] = 0
+        #jach[0],jach[:,0] = 0, 0
+        return jach
 
     def _invert(self):
         """ From qh compute ph and compute velocity. """
