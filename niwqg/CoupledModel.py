@@ -38,6 +38,11 @@ class Model(Kernel.Kernel):
     def _step_etdrk4(self):
         """ march the system forward using a ETDRK4 scheme """
 
+        self._calc_energy_conversion()
+        k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p1 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a1 = self._calc_ep_phi()
+
         # q-equation
         self.qh0 = self.qh.copy()
         Fn0 = -self.jacobian_psi_q()
@@ -46,7 +51,6 @@ class Model(Kernel.Kernel):
 
         # phi-equation
         self.phih0 = self.phih.copy()
-        self._calc_rel_vorticity()
         Fn0w = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expch_hw*self.phih0 + Fn0w*self.Qhw)*self.filtr
         self.phih1 = self.phih.copy()
@@ -54,44 +58,66 @@ class Model(Kernel.Kernel):
         # q-equation
         self.phi = self.ifft(self.phih)
         self._invert()
+        self._calc_rel_vorticity()
+
+        self._calc_energy_conversion()
+        k2 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p2 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a2 = self._calc_ep_phi()
+
         Fna = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
         # phi-equation
-        self._calc_rel_vorticity()
         Fnaw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expch_hw*self.phih0 + Fnaw*self.Qhw)*self.filtr
 
         # q-equation
         self.phi = self.ifft(self.phih)
         self._invert()
+        self._calc_rel_vorticity()
+
+        self._calc_energy_conversion()
+        k3 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p3 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a3 = self._calc_ep_phi()
+
         Fnb = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
         # phi-equation
-        self._calc_rel_vorticity()
         Fnbw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expch_hw*self.phih1 + ( 2.*Fnbw - Fn0w )*self.Qhw)*self.filtr
 
         # q-equation
         self.phi = self.ifft(self.phih)
         self._invert()
+        self._calc_rel_vorticity()
+
+        self._calc_energy_conversion()
+        k4 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
+        p4 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        a4 = self._calc_ep_phi()
+
         Fnc = -self.jacobian_psi_q()
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
 
         # phi-equation
-        self._calc_rel_vorticity()
         Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expchw*self.phih0 + Fn0w*self.f0w +  2.*(Fnaw+Fnbw)*self.fabw\
                   + Fncw*self.fcw)*self.filtr
 
+
+        self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
+        self.Pw += self.dt*(p1 + 2*(p2+p3) + p4)/6.
+        self.Kw += self.dt*(a1 + 2*(a2+a3) + a4)/6.
+
         # invert
         self.phi = self.ifft(self.phih)
         self._invert()
+        self._calc_rel_vorticity()
 
-        # calcuate q
-        self.q = self.ifft(self.qh).real
 
     def _initialize_etdrk4(self):
 
@@ -108,7 +134,7 @@ class Model(Kernel.Kernel):
 
         # the exponent for the linear part
         self.c = np.zeros((self.nl,self.nk),self.dtype_cplx) - 1j*self.k*self.U
-        self.c += -self.nu4*self.wv4
+        self.c += -self.nu4*self.wv4 - self.nu*self.wv2 - self.mu
         ch = self.c*self.dt
         self.expch = np.exp(ch)
         self.expch_h = np.exp(ch/2.)
@@ -131,7 +157,8 @@ class Model(Kernel.Kernel):
 
         # the exponent for the linear part
         self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)  -1j*self.k*self.U
-        self.c += -self.nu4w*self.wv4 - 0.5j*self.f*(self.wv2/self.kappa2)
+        self.c += -self.nu4w*self.wv4 - 0.5j*self.f*(self.wv2/self.kappa2)\
+                        - self.nuw*self.wv2 - self.muw
         ch = self.c*self.dt
         self.expchw = np.exp(ch)
         self.expch_hw = np.exp(ch/2.)
@@ -148,20 +175,26 @@ class Model(Kernel.Kernel):
     def jacobian_phic_phi(self):
         """ Compute the Jacobian phix and phiy. """
         self.phix, self.phiy = self.ifft(self.ik*self.phih), self.ifft(self.il*self.phih)
-        return self.fft((1j*(np.conj(self.phix)*self.phiy - np.conj(self.phiy)*self.phix)).real)
+        jach = self.fft((1j*(np.conj(self.phix)*self.phiy - np.conj(self.phiy)*self.phix)).real)
+        jach[0,0] = 0
+        return jach
         #phic = np.conj(self.phi)
         #return self.ik*self.fft(phic*self.phiy) - self.il*self.fft(phic*self.phix)
 
-
     def jacobian_psi_phi(self):
         """ Compute the Jacobian phix and phiy. """
-        return self.fft( (self.u*self.phix + self.v*self.phiy) )
+        jach = self.fft( (self.u*self.phix + self.v*self.phiy) )
+        jach[0,0] = 0
+        return jach
 
     def jacobian_psi_q(self):
         """ Compute the Jacobian between psi and q. Return in Fourier space. """
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         q = self.ifft(self.qh).real
-        return self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
+        jach = self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
+        jach[0,0] = 0
+        #jach[0],jach[:,0] = 0, 0
+        return jach
 
     def _invert(self):
         """ From qh compute ph and compute velocity. """
@@ -169,31 +202,17 @@ class Model(Kernel.Kernel):
         # the wavy PV
         self.phi2 = np.abs(self.phi)**2
         self.gphi2h = -self.wv2*self.fft(self.phi2)
-        self.qwh = (0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f/2.
-
-        #self._calc_wave_qg_flow()
-        #self._calc_vorticity_qg_flow()
-
-        #self.ph = self.pvh-self.pwh
+        self.qwh = 0.5*(0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f
+        self.qwh *= self.filtr
 
         # invert for psi
-        self.pw = self.ifft(-self.wv2i*self.qwh).real
-        self.pv = self.ifft(-self.wv2i*self.qh).real
-        self.p = self.pv-self.pw
+        self.pw = self.ifft((self.wv2i*self.qwh)).real
+        self.pv = self.ifft(-(self.wv2i*self.qh)).real
+        self.p = self.pv+self.pw
         self.ph = self.fft(self.p)
-        #self.ph = -self.wv2i*self.qh -self.pw
-        #self.phi2h = self.fft(self.phi2-self.phi2.mean())
-        #self.ph = -self.wv2i*(self.qh -  0.5*self.jacobian_phic_phi()/self.f) - 0.25*self.phi2h/self.f
 
-    def _calc_wave_qg_flow(self):
-        # the wavy PV
-        self.phi2 = np.abs(self.phi)**2
-        self.gphi2h = -self.wv2*self.fft(self.phi2)
-        self.qwh = (0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f/2.
-        self.pwh = self.ifft(-self.wv2i*self.qwh).real
-
-    def _calc_vorticity_qg_flow(self):
-        self.pvh = self.ifft(-self.wv2i*self.qh).real
+        # calcuate q
+        self.q = self.ifft(self.qh).real
 
     def _calc_ke_qg_decomp(self):
         self.phq = -self.wv2i*self.qh
@@ -231,3 +250,5 @@ class Model(Kernel.Kernel):
 
     def _calc_class_derived_fields(self):
         self._calc_ke_qg_decomp()
+        #self._invert()
+        #self._calc_rel_vorticity()

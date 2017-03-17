@@ -28,8 +28,12 @@ class Kernel(object):
         N = 1.,                     # buoyancy frequency
         m = 1.,                     # vertical wavenumber
         g= 9.81,                    # acceleration due to gravity
-        nu4=5.e9,                   # hyperviscosity
-        nu4w=5.e5,                  # hyperviscosity waves
+        nu4=0,                   # hyperviscosity
+        nu4w=0,                  # hyperviscosity waves
+        nu=0,                   #  viscosity
+        nuw=0,                  #  viscosity waves
+        mu=0,                   #  viscosity
+        muw=0,                  #  viscosity waves
         dealias = False,
         save_to_disk=False,
         overwrite=True,
@@ -56,6 +60,10 @@ class Kernel(object):
         self.g = g
         self.nu4 = nu4
         self.nu4w = nu4w
+        self.nu = nu
+        self.nuw = nuw
+        self.mu = mu
+        self.muw = muw
         self.f = f
         self.N = N
         self.m = m
@@ -196,8 +204,8 @@ class Kernel(object):
             self.logger.info(' Using filter')
         elif self.dealias:
             self.filtr = np.ones_like(self.wv2)
-            self.filtr[self.nx/3:2*self.nx/3,:] = 0.
-            self.filtr[:,self.ny/3:2*self.ny/3] = 0.
+            self.filtr[self.nx//3:2*self.nx//3,:] = 0.
+            self.filtr[:,self.ny//3:2*self.ny//3] = 0.
             self.logger.info(' Dealiasing with 2/3 rule')
         else:
             self.filtr = np.ones_like(self.wv2)
@@ -258,9 +266,13 @@ class Kernel(object):
 
     def _calc_rel_vorticity(self):
         """ from psi compute relative vorticity """
-        self.qh_psi = -self.wv2*self.ph
+        #self._invert()
+        #self.qh_psi = -self.wv2*self.ph
+        self.qw = self.ifft(self.qwh).real
+        self.q_psi = (self.q-self.qw)
+
         #self.qh_psi = self.qh-self.qwh
-        self.q_psi = self.ifft(self.qh_psi).real
+        #self.q_psi = self.ifft(self.qh_psi).real
 
     def _calc_strain(self):
         """ from psi compute geostrophic rate of strain """
@@ -281,11 +293,15 @@ class Kernel(object):
         self._invert()
         self._calc_rel_vorticity()
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
+        self.Ke = self.ke = self._calc_ke_qg()
+
 
     def set_phi(self,phi):
         """ Initialize pv """
         self.phi = phi
         self.phih = self.fft(self.phi)
+        self.Pw = self._calc_pe_niw()
+        self.Kw = self._calc_ke_niw()
 
     def _initialize_fft(self):
         self.fft =  (lambda x : np.fft.fft2(x))
@@ -308,6 +324,8 @@ class Kernel(object):
 
     def _calc_ke_qg(self):
         return 0.5*self.spec_var(self.wv*self.ph)
+        #self._invert()
+        #self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         #return 0.5*(self.u**2+self.v**2).mean()
 
     def _calc_ke_niw(self):
@@ -324,8 +342,8 @@ class Kernel(object):
 
     def _calc_skewness(self):
         """ calculates skewness in relative vorticity """
-        self.qpsi = self.ifft(-self.wv2*self.ph).real
-        return ( (self.qpsi**3).mean() / (((self.qpsi**2).mean())**1.5) )
+        #self.qpsi = self.ifft(-self.wv2*self.ph).real
+        return ( (self.q_psi**3).mean() / (((self.q_psi**2).mean())**1.5) )
 
     def _calc_ens(self):
         """ calculates potential enstrophy """
@@ -333,13 +351,17 @@ class Kernel(object):
 
     def _calc_ep_phi(self):
         """ calculates hyperviscous dissipation of NIW KE  """
-        return -self.nu4w*(np.abs(self.lapphi)**2).mean()
+        return -self.nu4w*(np.abs(self.lapphi)**2).mean()\
+                - self.nuw*(np.abs(self.phix)**2+np.abs(self.phiy)**2).mean()\
+                -self.muw*(np.abs(self.phi)**2).mean()
 
     def _calc_ep_psi(self):
         """ calculates hyperviscous dissipation of QG KE """
         #return -self.nu4*self.spec_var(self.wv*self.qh)
         lap2psi = self.ifft(self.wv4*self.ph).real
-        return self.nu4*(self.q*lap2psi).mean()
+        lapq = self.ifft(-self.wv2*self.qh).real
+        return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
+                + self.mu*(self.p*self.q).mean()
         #qx, qy = self.ifft(self.ik*self.qh), self.ifft(self.il*self.qh)
         #return -self.nu4*(qx**2 + qy**2).mean()
 
@@ -351,7 +373,10 @@ class Kernel(object):
         """"  calculates hyperviscous dissipation of NIW PE """
         lphix, lphiy = self.ifft(-self.ik*self.wv2*self.phih),\
                             self.ifft(-self.il*self.wv2*self.phih)
-        return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2
+        # check this.
+        return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2\
+                -0.5*self.nuw*(np.abs(self.lapphi)**2).mean()/self.kappa2\
+                -0.5*self.muw*(np.abs(self.phix)**2 + np.abs(self.phiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
         """ compute variance of p from Fourier coefficients ph """
@@ -370,19 +395,26 @@ class Kernel(object):
         J_psi_phi = self.u*self.phix+self.v*self.phiy
         self.lapphi = np.fft.ifft2(-self.wv2*self.phih)
 
+        # dissipative source of QG KE
+        lap2phi = self.ifft(self.wv4*self.phih)
+        diss_phi= -self.nu4w*lap2phi + self.nuw*self.lapphi - self.muw*self.phi
+        J_diss_phi = -(diss_phi*np.conj(J_psi_phi)).imag
+        L_diss_phi = 0.5*(diss_phi*np.conj(self.phi)).real*self.q_psi
+
         # div fluxes
         divFw = 0.5*self.hslash*(np.conj(self.phi)*self.lapphi).imag
 
         # correlations
         self.gamma1 = (0.5*self.q_psi*divFw).mean()/self.f
         self.gamma2 = 0.5*self.hslash*((np.conj(self.lapphi)*J_psi_phi).real).mean()/self.f
+        self.xi1 = J_diss_phi.mean()/self.f
+        self.xi2 = L_diss_phi.mean()/self.f
         self.pi = (0.5*self.phi.mean()*(self.q_psi*np.conj(self.phi)).mean()).imag
 
     def _calc_icke_niw(self):
         self.ke_niw = self._calc_ke_niw()
         self.cke_niw = 0.5*(np.abs(self.phi.mean())**2)
         self.ike_niw = self.ke_niw-self.cke_niw
-
 
     def _initialize_diagnostics(self):
         self.diagnostics = dict()
@@ -397,6 +429,27 @@ class Kernel(object):
                 units='seconds',
                 types = 'scalar',
                 function = (lambda self: self.t)
+        )
+
+        add_diagnostic(self, 'Ke',
+                description='Quasigeostrophic Kinetic Energy, from energy equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Ke)
+        )
+
+        add_diagnostic(self, 'Pw',
+                description='NIW Potential Energy, from energy equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Pw)
+        )
+
+        add_diagnostic(self, 'Kw',
+                description='NIW Kinetic Energy, from energy equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Kw)
         )
 
         add_diagnostic(self, 'ke_qg',
@@ -469,6 +522,20 @@ class Kernel(object):
                 units=r'$m^2 s^{-3}$',
                 types = 'scalar',
                 function = (lambda self: self.gamma2)
+        )
+
+        add_diagnostic(self, 'xi_r',
+                description='The QG energy generation due to wave dissipation, vorticity',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self.xi1)
+        )
+
+        add_diagnostic(self, 'xi_a',
+                description='The QG energy generation due to wave dissipation, advection',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self.xi2)
         )
 
         add_diagnostic(self, 'pi',
