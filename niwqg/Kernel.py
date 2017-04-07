@@ -3,6 +3,12 @@ from numpy import pi
 import logging, os
 import h5py
 
+try:
+    import pyfftw
+    pyfftw.interfaces.cache.enable()
+except ImportError:
+    pass
+
 from .Diagnostics import *
 from .Saving import *
 
@@ -39,7 +45,9 @@ class Kernel(object):
         overwrite=True,
         tsave_snapshots=10,         # interval fro saving snapshots (in timesteps)
         tdiags=10,                  # interval for diagnostics (in timesteps)
-        path = 'output/'):
+        path = 'output/',
+        use_fftw = False,
+        fftw_nthreads = 4):
 
         # put all the parameters into the object
         # grid
@@ -54,6 +62,8 @@ class Kernel(object):
         self.tmax = tmax
         # fft
         self.dealias = dealias
+        self.use_fftw = use_fftw
+        self.fftw_nthreads = fftw_nthreads
 
         # constants
         self.U = U
@@ -429,8 +439,17 @@ class Kernel(object):
         self.Kw = self._calc_ke_niw()
 
     def _initialize_fft(self):
-        self.fft =  (lambda x : np.fft.fft2(x))
-        self.ifft = (lambda x : np.fft.ifft2(x))
+        if self.use_fftw:
+            self.fft = (lambda x :
+                    pyfftw.interfaces.numpy_fft.fft2(x, threads=self.fftw_nthreads,\
+                            planner_effort='FFTW_ESTIMATE'))
+            self.ifft = (lambda x :
+                    pyfftw.interfaces.numpy_fft.ifft2(x, threads=self.fftw_nthreads,\
+                            planner_effort='FFTW_ESTIMATE'))
+        else:
+            self.fft =  (lambda x : np.fft.fft2(x))
+            self.ifft = (lambda x : np.fft.ifft2(x))
+
 
     def _print_status(self):
         """Output some basic stats."""
