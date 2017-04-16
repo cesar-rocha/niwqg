@@ -400,14 +400,9 @@ class Kernel(object):
             'needs to be implemented by Model subclass')
 
     def _calc_rel_vorticity(self):
-        """ from psi compute relative vorticity """
-        #self._invert()
-        #self.qh_psi = -self.wv2*self.ph
-        self.qw = self.ifft(self.qwh).real
-        self.q_psi = (self.q-self.qw)
-
-        #self.qh_psi = self.qh-self.qwh
-        #self.q_psi = self.ifft(self.qh_psi).real
+        """ from psi compute relative vorticity,
+            this is surpassed by _calc_rel_vorticity in CoupledModel """
+        self.q_psi = (self.q)
 
     def _calc_strain(self):
         """ from psi compute geostrophic rate of strain """
@@ -426,7 +421,7 @@ class Kernel(object):
         self.q = q
         self.qh = self.fft(self.q)
         self._invert()
-        self._calc_rel_vorticity()
+        #self._calc_rel_vorticity()
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         self.Ke = self.ke = self._calc_ke_qg()
 

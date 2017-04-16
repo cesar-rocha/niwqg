@@ -38,6 +38,12 @@ class Model(object):
         nu = 0,                     # viscosity
         mu = 0,                     # linear drag
         beta = 0,                   # beta
+        # passive scalar
+        passive_scalar = False,
+        nu4c = 3.5e9,
+        nuc = 0,
+        muc = 0,
+        # fft
         dealias = False,
         save_to_disk=False,
         overwrite=True,
@@ -62,6 +68,8 @@ class Model(object):
         self.tavestart = tavestart
         self.taveint = taveint
         self.tdiags = tdiags
+        # scalar
+        self.passive_scalar = passive_scalar
         # fft
         self.dealias = dealias
         self.use_fftw = use_fftw
@@ -73,6 +81,9 @@ class Model(object):
         self.nu4 = nu4
         self.nu = nu
         self.mu = mu
+        self.nu4c = nu4c
+        self.nuc = nuc
+        self.muc = muc
 
         # saving stuff
         self.save_to_disk = save_to_disk
@@ -270,22 +281,43 @@ class Model(object):
         self.qh = (self.expch_h*self.qh0 + Fn0*self.Qh)*self.filtr
         self.qh1 = self.qh.copy()
 
+        if self.passive_scalar:
+            self.ch0 = self.ch.copy()
+            Fn0c = -self.jacobian_psi_c()
+            self.ch = (self.expch_hc*self.ch0 + Fn0c*self.Qhc)*self.filtr
+            self.ch1 = self.ch.copy()
+
         self._invert()
         k1 = self._calc_ep_psi()
 
         Fna = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
+        if self.passive_scalar:
+            Fnac = -self.jacobian_psi_c()
+            self.ch = (self.expch_hc*self.ch0 + Fnac*self.Qhc)*self.filtr
+
         self._invert()
         k2 = self._calc_ep_psi()
+
         Fnb = -self.jacobian_psi_q()
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
+        if self.passive_scalar:
+            Fnbc = -self.jacobian_psi_c()
+            self.ch = (self.expch_hc*self.ch1 + ( 2.*Fnbc - Fn0c )*self.Qhc)*self.filtr
+
         self._invert()
         k3 = self._calc_ep_psi()
+
         Fnc = -self.jacobian_psi_q()
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
+
+        if self.passive_scalar:
+            Fncc = -self.jacobian_psi_c()
+            self.ch = (self.expchc*self.ch0 + Fn0c*self.f0c+  2.*(Fnac+Fnbc)*self.fabc\
+                  + Fncc*self.fcc)*self.filtr
 
         # invert
         self._invert()
@@ -329,11 +361,42 @@ class Model(object):
         self.fab =  self.dt*( ( ( 2. + LR + np.exp(LR)*( -2. + LR ) )/ LR3 ).mean(axis=-1) )
         self.fc  =  self.dt*( ( ( -4. -3.*LR - LR2 + np.exp(LR)*(4.-LR) )/ LR3 ).mean(axis=-1) )
 
+
+        if self.passive_scalar:
+            #
+            # coefficients for c-equation
+            #
+
+            # the exponent for the linear part
+            self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)
+            self.c += -self.nu4c*self.wv4 - self.nuc*self.wv2 - self.mu
+            self.c += self.beta*self.ik*self.wv2i
+            ch = self.c*self.dt
+            self.expchc = np.exp(ch)
+            self.expch_hc = np.exp(ch/2.)
+            self.expch2c = np.exp(2.*ch)
+
+            r = rho*np.exp(2j*np.pi*((np.arange(1.,M+1))/M)) # roots for integral
+            LR = ch[...,np.newaxis] + r[np.newaxis,np.newaxis,...]
+            LR2 = LR*LR
+            LR3 = LR2*LR
+            self.Qhc   =  self.dt*(((np.exp(LR/2.)-1.)/LR).mean(axis=-1))
+            self.f0c  =  self.dt*( ( ( -4. - LR + ( np.exp(LR)*( 4. - 3.*LR + LR2 ) ) )/ LR3 ).mean(axis=-1) )
+            self.fabc =  self.dt*( ( ( 2. + LR + np.exp(LR)*( -2. + LR ) )/ LR3 ).mean(axis=-1) )
+            self.fcc  =  self.dt*( ( ( -4. -3.*LR - LR2 + np.exp(LR)*(4.-LR) )/ LR3 ).mean(axis=-1) )
+
+
     def jacobian_psi_q(self):
         """ Compute the Jacobian between psi and q. Return in Fourier space. """
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         q = self.ifft(self.qh).real
         return self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
+
+    def jacobian_psi_c(self):
+        """ Compute the Jacobian between psi and c. Return in Fourier space. """
+        #self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
+        self.c = self.ifft(self.ch).real
+        return self.ik*self.fft(self.u*self.c) + self.il*self.fft(self.v*self.c)
 
     def _invert(self):
         """ From qh compute ph and compute velocity. """
@@ -350,6 +413,11 @@ class Model(object):
         self.qh = self.fft(self.q)
         self._invert()
         self.Ke = self._calc_ke_qg()
+
+    def set_c(self,c):
+        """ Initialize passive scalar """
+        self.c = c
+        self.ch = self.fft(self.c)
 
     def _initialize_fft(self):
         if self.use_fftw:

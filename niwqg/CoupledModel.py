@@ -116,3 +116,14 @@ class Model(Kernel.Kernel):
         self._calc_ke_qg_decomp()
         #self._invert()
         #self._calc_rel_vorticity()
+
+    def _calc_rel_vorticity(self):
+        """ from psi compute relative vorticity """
+        #self._invert()
+        #self.qh_psi = -self.wv2*self.ph
+        self.qw = self.ifft(self.qwh).real
+        self.q_psi = (self.q-self.qw)
+
+        #self.qh_psi = self.qh-self.qwh
+        #self.q_psi = self.ifft(self.qh_psi).real
+
