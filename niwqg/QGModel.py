@@ -4,13 +4,6 @@ import logging
 import h5py
 from numpy import pi
 import logging, os
-
-try:
-    import pyfftw
-    pyfftw.interfaces.cache.enable()
-except ImportError:
-    pass
-
 from .Diagnostics import *
 from .Saving import *
 
@@ -49,9 +42,7 @@ class Model(object):
         overwrite=True,
         tsave_snapshots=10,  # in snapshots
         tdiags = 10,  # diagnostics
-        path = 'output/',
-        use_fftw = False,
-        fftw_nthreads = 4):
+        path = 'output/'):
 
         # put all the parameters into the object
         # grid
@@ -72,8 +63,6 @@ class Model(object):
         self.passive_scalar = passive_scalar
         # fft
         self.dealias = dealias
-        self.use_fftw = use_fftw
-        self.fftw_nthreads = fftw_nthreads
 
         # constants
         self.U = U
@@ -420,16 +409,8 @@ class Model(object):
         self.ch = self.fft(self.c)
 
     def _initialize_fft(self):
-        if self.use_fftw:
-            self.fft = (lambda x :
-                    pyfftw.interfaces.numpy_fft.rfft2(x, threads=self.fftw_nthreads,\
-                            planner_effort='FFTW_ESTIMATE'))
-            self.ifft = (lambda x :
-                    pyfftw.interfaces.numpy_fft.irfft2(x, threads=self.fftw_nthreads,\
-                            planner_effort='FFTW_ESTIMATE'))
-        else:
-            self.fft =  (lambda x : np.fft.rfft2(x))
-            self.ifft = (lambda x : np.fft.irfft2(x))
+        self.fft =  (lambda x : np.fft.rfft2(x))
+        self.ifft = (lambda x : np.fft.irfft2(x))
 
     def _print_status(self):
         """Output some basic stats."""
