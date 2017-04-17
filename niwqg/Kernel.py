@@ -421,7 +421,7 @@ class Kernel(object):
         self.q = q
         self.qh = self.fft(self.q)
         self._invert()
-        #self._calc_rel_vorticity()
+        self._calc_rel_vorticity()
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         self.Ke = self.ke = self._calc_ke_qg()
 

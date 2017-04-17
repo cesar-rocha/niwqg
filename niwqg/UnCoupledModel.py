@@ -39,9 +39,7 @@ class Model(Kernel.Kernel):
 
     def _invert(self):
         """ From qh compute ph and compute velocity. """
-
         self.ph = -self.wv2i*self.qh
-
 
     def _initialize_class_diagnostics(self):
         pass
