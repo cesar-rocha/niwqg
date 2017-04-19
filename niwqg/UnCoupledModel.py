@@ -1,5 +1,6 @@
 import numpy as np
 from . import Kernel
+from .Diagnostics import *
 
 class Model(Kernel.Kernel):
     """ A subclass that represents the YBJ-QG uncoupled model """
@@ -33,16 +34,24 @@ class Model(Kernel.Kernel):
         self.phi = np.zeros(self.shape_real,  self.dtype_cplx)
         self.phih = np.zeros(self.shape_cplx,  self.dtype_cplx)
 
-    def _calc_grad_phi(self):
-        """ Calculates grad phi """
-        self.phix, self.phiy = self.ifft(self.ik*self.phih), self.ifft(self.il*self.phih)
 
     def _invert(self):
         """ From qh compute ph and compute velocity. """
-        self.ph = -self.wv2i*self.qh
+
+        # invert for psi
+        self.p = self.ifft(-(self.wv2i*self.qh)).real
+        self.ph = self.fft(self.p)
+
+        # calcuate q
+        self.q = self.ifft(self.qh).real
 
     def _initialize_class_diagnostics(self):
         pass
 
     def _calc_class_derived_fields(self):
         pass
+
+    def _calc_rel_vorticity(self):
+        """ from psi compute relative vorticity """
+        self.q_psi = self.q
+

@@ -45,21 +45,6 @@ class Model(Kernel.Kernel):
         #phic = np.conj(self.phi)
         #return self.ik*self.fft(phic*self.phiy) - self.il*self.fft(phic*self.phix)
 
-    def jacobian_psi_phi(self):
-        """ Compute the Jacobian phix and phiy. """
-        jach = self.fft( (self.u*self.phix + self.v*self.phiy) )
-        jach[0,0] = 0
-        return jach
-
-    def jacobian_psi_q(self):
-        """ Compute the Jacobian between psi and q. Return in Fourier space. """
-        self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
-        q = self.ifft(self.qh).real
-        jach = self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
-        jach[0,0] = 0
-        #jach[0],jach[:,0] = 0, 0
-        return jach
-
     def _invert(self):
         """ From qh compute ph and compute velocity. """
 
@@ -119,11 +104,6 @@ class Model(Kernel.Kernel):
 
     def _calc_rel_vorticity(self):
         """ from psi compute relative vorticity """
-        #self._invert()
-        #self.qh_psi = -self.wv2*self.ph
         self.qw = self.ifft(self.qwh).real
         self.q_psi = (self.q-self.qw)
-
-        #self.qh_psi = self.qh-self.qwh
-        #self.q_psi = self.ifft(self.qh_psi).real
 
