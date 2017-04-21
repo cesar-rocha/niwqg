@@ -54,4 +54,5 @@ class Model(Kernel.Kernel):
     def _calc_rel_vorticity(self):
         """ from psi compute relative vorticity """
         self.q_psi = self.q
+        
 
