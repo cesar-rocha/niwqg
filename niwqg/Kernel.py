@@ -87,6 +87,7 @@ class Kernel(object):
 
         # initializations
         self._initialize_logger()
+        self.logger.info(self.model)
         self._initialize_grid()
         self._allocate_variables()
         self._initialize_filter()
@@ -437,7 +438,7 @@ class Kernel(object):
             self.kew = self._calc_ke_niw()
             self.pew = self._calc_pe_niw()
             self.cfl = self._calc_cfl()
-            self.logger.info('Step: %i, Time: %4.3e, P: %4.3e , KE QG: %4.3e, KE NIW: %4.3e, PE NIW: %4.3e,CFL: %4.3f'
+            self.logger.info('Step: %4i, Time: %2.1e, P: %2.1e, Ke: %4.3e, Kw: %4.3e, Pw: %4.3e, CFL: %3.2f'
                     , self.tc,self.t, self.t/self.tmax,self.ke,self.kew,self.pew,self.cfl )
 
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')

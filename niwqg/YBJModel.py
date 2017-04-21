@@ -10,6 +10,8 @@ class Model(Kernel.Kernel):
         **kwargs
         ):
 
+        self.model = " YBJ Model (Steady QG flow)"
+
         super(Model, self).__init__(**kwargs)
 
     def _allocate_variables(self):

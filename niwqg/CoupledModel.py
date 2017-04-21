@@ -10,6 +10,8 @@ class Model(Kernel.Kernel):
         **kwargs
         ):
 
+        self.model = " Coupled Model"
+
         super(Model, self).__init__(**kwargs)
 
     def _allocate_variables(self):
