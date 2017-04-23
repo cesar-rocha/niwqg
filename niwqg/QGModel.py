@@ -10,7 +10,8 @@ from .Saving import *
 class Model(object):
 
     """ Python class that represents the barotropic quasigeostrophic
-        pseudospectral model in a doubly periodic domain.
+        pseudospectral model in a doubly periodic domain. Physical parameters
+        observe SI units.
 
     Parameters
     -----------
@@ -58,6 +59,7 @@ class Model(object):
             Calculate diagnostics every tdiags time steps.
     path: string (optional)
             Location for saving output files.
+
     """
 
     def __init__(
