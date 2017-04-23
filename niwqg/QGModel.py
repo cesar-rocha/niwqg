@@ -9,7 +9,56 @@ from .Saving import *
 
 class Model(object):
 
-    """" Barotropic QG model """
+    """ Python class that represents the barotropic quasigeostrophic
+        pseudospectral model in a doubly periodic domain.
+
+    Parameters
+    -----------
+    nx: integer (optional)
+            Number of grid points in the x-direction.
+            The number of modes is nx/2+1.
+    ny: integer (optional)
+            Number of grid points in the y-direction.
+            If None, then ny=nx.
+    L:  float (optional)
+            Domain size.
+    dt: float (optional)
+            Time step for time integration.
+    twrite: integer (optional)
+            Print model status to screen every twrite time steps.
+    tmax: float (optional)
+            Total time of simulation.
+    U: float (optional)
+            Uniform zonal flow
+    use_filter: bool (optional)
+            If True, then uses exponential spectral filter.
+    nu4: float (optional)
+            Fouth-order hyperdiffusivity of potential vorticity.
+    nu: float (optional)
+            Diffusivity of potential vorticity.
+    mu: float (optional)
+            Linear drag of potential vorticity.
+    passive_scalar: bool (optional)
+            If True, then calculates passive scalar solution.
+    nu4c: float (optional)
+            Fouth-order hyperdiffusivity of passive scalar.
+    nuc: float (optional)
+            Diffusivity of passive scalar.
+    muc: float (optional)
+            Linear drag of passive scalar.
+    dealias: bool (optional)
+            If True, then dealias solution using 2/3 rule.
+    save_to_disk: bool (optional)
+            If True, then save parameters and snapshots to disk.
+    overwrite: bool (optional)
+            If True, then overwrite extant files.
+    tsave_snapshots: integer (optional)
+            Save snapshots every tsave_snapshots time steps.
+    tdiags: integer (optional)
+            Calculate diagnostics every tdiags time steps.
+    path: string (optional)
+            Location for saving output files.
+    """
 
     def __init__(
         self,
@@ -19,7 +68,7 @@ class Model(object):
         L=5e5,                     # domain size is L [m]
         # timestepping parameters
         dt=10000.,                   # numerical timestep
-        twrite=1000.,               # interval for cfl and ke writeout (in timesteps)
+        twrite=1000,               # interval for cfl and ke writeout (in timesteps)
         tswrite=10,
         tmax=250000.,           # total time of integration
         tavestart=315360000.,       # start time for averaging
