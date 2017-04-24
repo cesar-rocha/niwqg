@@ -63,50 +63,42 @@ Parameters
 
     def __init__(
         self,
-        # grid size parameters
-        nx=128,                     # grid resolution
+        nx=128,
         ny=None,
-        L=5e5,                     # domain size is L [m]
-        # timestepping parameters
-        dt=10000.,                   # numerical timestep
-        twrite=1000.,               # interval for cfl and ke writeout (in timesteps)
-        tmax=250000.,           # total time of integration
+        L=5e5,
+        dt=10000.,
+        twrite=1000.,
+        tmax=250000.,
         use_filter = True,
-        cflmax = 0.8,               # largest CFL allowed
-        # constants
-        U = .0,                     # uniform zonal flow
-        f = 1.e-4,                     # coriolis parameter (not necessary for two-layer model
-        N = 0.01,                     # buoyancy frequency
-        m = 0.025,                     # vertical wavenumber
-        g= 9.81,                    # acceleration due to gravity
-        nu4=0,                   # hyperviscosity
-        nu4w=0,                  # hyperviscosity waves
-        nu=20,                   #  viscosity
-        nuw=50.,                  #  viscosity waves
-        mu=0,                   #  viscosity
-        muw=0,                  #  viscosity waves
+        cflmax = 0.8,
+        U = .0,
+        f = 1.e-4,
+        N = 0.01,
+        m = 0.025,
+        g= 9.81,
+        nu4=0,
+        nu4w=0,
+        nu=20,
+        nuw=50.,
+        mu=0,
+        muw=0,
         dealias = False,
         save_to_disk=False,
         overwrite=True,
-        tsave_snapshots=10,         # interval fro saving snapshots (in timesteps)
-        tdiags=10,                  # interval for diagnostics (in timesteps)
+        tsave_snapshots=10,
+        tdiags=10,
         path = 'output/'):
 
-        # put all the parameters into the object
-        # grid
         self.nx = nx
         self.ny = nx
         self.L = L
         self.W = L
 
-        # time
         self.dt = dt
         self.twrite = twrite
         self.tmax = tmax
-        # fft
         self.dealias = dealias
 
-        # constants
         self.U = U
         self.g = g
         self.nu4 = nu4
@@ -122,10 +114,8 @@ Parameters
         self.kappa2 = self.kappa**2
         self.cflmax = cflmax
 
-        # nondimensional parameters
         self.hslash = self.f/self.kappa2
 
-        # saving stuff
         self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
@@ -133,10 +123,8 @@ Parameters
         self.tdiags = tdiags
         self.path = path
 
-        # flags
         self.use_filter = use_filter
 
-        # initializations
         self._initialize_logger()
         self.logger.info(self.model)
         self._initialize_grid()
@@ -148,10 +136,8 @@ Parameters
         initialize_save_snapshots(self,self.path)
         save_setup(self,)
 
-        # fft
         self._initialize_fft()
 
-        # diagnostics
         self._initialize_diagnostics()
 
 

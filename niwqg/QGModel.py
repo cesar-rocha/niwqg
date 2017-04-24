@@ -64,45 +64,37 @@ class Model(object):
 
     def __init__(
         self,
-        # grid size parameters
-        nx=128,                     # grid resolution
+        nx=128,
         ny=None,
-        L=5e5,                     # domain size is L [m]
-        # timestepping parameters
-        dt=10000.,                   # numerical timestep
-        twrite=1000,               # interval for cfl and ke writeout (in timesteps)
+        L=5e5,
+        dt=10000.,
+        twrite=1000,
         tswrite=10,
-        tmax=250000.,           # total time of integration
-        tavestart=315360000.,       # start time for averaging
-        taveint=86400.,             # time interval used for summation in longterm average in seconds
+        tmax=250000.,
+        tavestart=315360000.,
+        taveint=86400.,
         use_filter = True,
-        # constants
-        U = .0,                     # uniform zonal flow
-        nu4=5.e9,                   # hyperviscosity
-        nu = 0,                     # viscosity
-        mu = 0,                     # linear drag
-        beta = 0,                   # beta
-        # passive scalar
+        U = .0,
+        nu4=5.e9,
+        nu = 0,
+        mu = 0,
+        beta = 0,
         passive_scalar = False,
         nu4c = 3.5e9,
         nuc = 0,
         muc = 0,
-        # fft
         dealias = False,
         save_to_disk=False,
         overwrite=True,
-        tsave_snapshots=10,  # in snapshots
-        tdiags = 10,  # diagnostics
+        tsave_snapshots=10,
+        tdiags = 10,
         path = 'output/'):
 
-        # put all the parameters into the object
-        # grid
         self.nx = nx
         self.ny = nx
         self.L = L
         self.W = L
 
-        # timestepping
         self.dt = dt
         self.twrite = twrite
         self.tswrite = tswrite
@@ -110,12 +102,9 @@ class Model(object):
         self.tavestart = tavestart
         self.taveint = taveint
         self.tdiags = tdiags
-        # scalar
         self.passive_scalar = passive_scalar
-        # fft
         self.dealias = dealias
 
-        # constants
         self.U = U
         self.beta = beta
         self.nu4 = nu4
@@ -125,13 +114,11 @@ class Model(object):
         self.nuc = nuc
         self.muc = muc
 
-        # saving stuff
         self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
         self.path = path
 
-        # flags
         self.use_filter = use_filter
 
         self._initialize_logger()
@@ -141,16 +128,13 @@ class Model(object):
         self._initialize_etdrk4()
         self._initialize_time()
 
-        # initialize path to save
         initialize_save_snapshots(self, self.path)
         save_setup(self, )
 
         self.cflmax = .5
 
-        # fft
         self._initialize_fft()
 
-        # diagnostics
         self._initialize_diagnostics()
 
 
