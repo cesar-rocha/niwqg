@@ -27,7 +27,9 @@ class Model(Kernel.Kernel):
         super(Model, self).__init__(**kwargs)
 
     def _allocate_variables(self):
-        """ Allocate variables in memory """
+
+    """ Allocate variables so that variable addresses are close in memory.
+    """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -50,7 +52,9 @@ class Model(Kernel.Kernel):
 
 
     def _invert(self):
-        """ From qh compute ph and compute velocity. """
+
+        """ Calculate the streamfunction given the potential vorticity.
+        """
 
         # invert for psi
         self.p = self.ifft(-(self.wv2i*self.qh)).real
@@ -60,11 +64,13 @@ class Model(Kernel.Kernel):
         self.q = self.ifft(self.qh).real
 
     def _initialize_class_diagnostics(self):
+
+    """ Compute subclass-specific derived fields.
+    """
         pass
 
     def _calc_class_derived_fields(self):
+    """  Compute the geostrophic relative vorticity–––the Laplacian of the
+            streamfuctions.
+    """
         pass
-
-    def _calc_rel_vorticity(self):
-        """ from psi compute relative vorticity """
-        self.q_psi = self.q

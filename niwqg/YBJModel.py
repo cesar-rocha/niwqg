@@ -27,7 +27,9 @@ class Model(Kernel.Kernel):
         super(Model, self).__init__(**kwargs)
 
     def _allocate_variables(self):
-        """ Allocate variables in memory """
+
+    """ Allocate variables so that variable addresses are close in memory.
+    """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -48,7 +50,14 @@ class Model(Kernel.Kernel):
 
 
     def _step_etdrk4(self):
-        """ march the system forward using a ETDRK4 scheme """
+
+        """ Compute the advective term–––the Jacobian between psi and phi.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,phi)
+        """
 
         # phi-equation
         self.phih0 = self.phih.copy()
@@ -79,12 +88,16 @@ class Model(Kernel.Kernel):
 
     def _initialize_etdrk4(self):
 
-        """ This performs pre-computations for the Expotential Time Differencing
-            Fourth Order Runge Kutta time stepper. The linear part is calculated
-            exactly.
-            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-                Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005. """
 
+    """ Compute coefficients of the exponential time-dfferencing method
+        with a Runge-Kutta 4 scheme.
+
+        Rereferences
+        ------------
+        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+    """
 
         M = 32.  # number of points for line integral in the complex plane
         rho = 1.  # radius for complex integration
@@ -108,21 +121,38 @@ class Model(Kernel.Kernel):
         self.fcw  =  self.dt*( ( ( -4. -3.*LR - LR2 + np.exp(LR)*(4.-LR) )/ LR3 ).mean(axis=-1) )
 
     def jacobian_psi_phi(self):
-        """ Compute the Jacobian phix and phiy. """
+
+        """ Compute the advective term–––the Jacobian between psi and phi.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,phi)
+        """
+
         return self.fft( (self.u*self.phix + self.v*self.phiy) )
 
     def _calc_grad_phi(self):
-        """ Calculates grad phi """
+
+        """ Compute gradient of wave velocity. """
+
         self.phix, self.phiy = self.ifft(self.ik*self.phih), self.ifft(self.il*self.phih)
 
     def _invert(self):
-        """ From qh compute ph and compute velocity. """
+
+        """ Calculate the streamfunction given the potential vorticity.
+        """
 
         self.ph = -self.wv2i*self.qh
 
-
     def _initialize_class_diagnostics(self):
+
+    """ Compute subclass-specific derived fields.
+    """
         pass
 
     def _calc_class_derived_fields(self):
+    """  Compute the geostrophic relative vorticity–––the Laplacian of the
+            streamfuctions.
+    """
         pass
