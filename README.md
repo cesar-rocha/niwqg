@@ -10,6 +10,11 @@ This package comes with `numpy`. To install h5py, use Anaconda's package manager
 conda install h5py
 ```
 
+For a more comprehensive installation or update with conda use
+```
+make install
+```
+
 ### Installing `niwqg`
 
 If you're a git user, fork and clone your fork of the `niwqg` repository.
@@ -29,7 +34,11 @@ python setup.py develop
 ```
 
 ### Testing `niwqg`
-Go to the testing directory:
+If you have [`pytest`](https://docs.pytest.org/en/latest/), then run
+```
+make test
+```
+Alternatively, to in the test directory
 ```bash
 cd niwqg/tests
 ```
@@ -46,6 +55,9 @@ The code is under rapid development by [@crocha700](https://github.com/crocha700
 as part of the project "Stimulated Loss of Balance" (SLOB) with
 [@glwagner](https://github.com/glwagner) and [@wry55](https://github.com/wry55).
 
-Guidelines for contributions will soon be posted in the documentation. For now,
-the only requirement is that contributions be submitted via pull-request of
-a cut-off branch (not master).
+Please, submit contributions via pull-request of
+a cut-off branch (not master). the PR must include the
+output of the test suite.
+
+# Funding
+This project is funded by the [National Aeronautics and Space Administration](https://www.nasa.gov) under grant NNX16AO5OH.
