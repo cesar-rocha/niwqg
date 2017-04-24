@@ -211,7 +211,6 @@ class Model(object):
             4) Save snapshots.
     """
 
-
         self._step_etdrk4()
         increment_diagnostics(self,)
         self._print_status()
@@ -222,8 +221,8 @@ class Model(object):
     """ Initialize model clock and other time variables.
     """
 
-        self.t=0        # actual time
-        self.tc=0       # timestep number
+        self.t=0        # time
+        self.tc=0       # time-step number
         self.taveints = np.ceil(self.taveint/self.dt)
 
     ### initialization routines, only called once at the beginning ###
@@ -279,7 +278,8 @@ class Model(object):
             'needs to be implemented by Model subclass')
 
     def _initialize_filter(self):
-        """Set up frictional filter."""
+
+        """Set up spectral filter or dealiasing."""
 
         if self.use_filter:
             cphi=0.65*pi
@@ -454,7 +454,7 @@ class Model(object):
 
         Returns
         -------
-        complex float
+        complex array of floats
             The Fourier transform of Jacobian(psi,q)
         """
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
@@ -468,7 +468,7 @@ class Model(object):
 
         Returns
         -------
-        complex float
+        complex array of floats
             The Fourier transform of Jacobian(psi,c)
         """
 
@@ -527,7 +527,7 @@ class Model(object):
                 Step: integer
                         Number of time steps completed
                 Time: float
-                        The model time.
+                        The elapsed time.
                 P: float
                         The percentage of simulation completed.
                 Ke: float
@@ -556,14 +556,14 @@ class Model(object):
         return 0.5*self.spec_var(self.qh)
 
     def _calc_ep_psi(self):
-        """ Compute hyperviscous dissipation of Ke """
+        """ Compute dissipation of Ke """
         lap2psi = self.ifft(self.wv4*self.ph)
         lapq = self.ifft(-self.wv2*self.qh)
         return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
                 + self.mu*(self.p*self.q).mean()
 
     def _calc_chi_q(self):
-        """"  Calculates hyperviscous dissipation of geostrophic potential
+        """"  Calculates dissipation of geostrophic potential
               enstrophy, S. """
         return -self.nu4*self.spec_var(self.wv2*self.qh)
 

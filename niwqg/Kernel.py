@@ -155,16 +155,19 @@ Parameters
 
 
     def run_with_snapshots(self, tsnapstart=0., tsnapint=432000.):
-        """Run the model forward, yielding to user code at specified intervals.
+
+
+    """ Run the model for prescribed time and yields to user code.
 
         Parameters
         ----------
 
-        tsnapstart : int
-            The timestep at which to begin yielding.
-        tstapint : int
-            The interval at which to yield.
-        """
+        tsnapstart : float
+                        The timestep at which to begin yielding.
+        tstapint : int (number of time steps)
+                        The interval at which to yield.
+
+    """
 
         tsnapints = np.ceil(tsnapint/self.dt)
 
@@ -175,7 +178,14 @@ Parameters
         return
 
     def run(self):
-        """Run the model forward without stopping until the end."""
+
+    """ Run the model until the end (`tmax`).
+
+        The algorithm is:
+            1) Save snapshots (i.e., save the initial condition).
+            2) Take a tmax/dt steps forward.
+            3) Save diagnostics.
+    """
 
         # save initial conditions
         if self.save_to_disk:
@@ -191,18 +201,31 @@ Parameters
 
     def _step_forward(self):
 
+    """ Step solutions forwards. The algorithm is:
+            1) Take one time step with ETDRK4 scheme.
+            2) Incremente diagnostics.
+            3) Print status.
+            4) Save snapshots.
+    """
+
         self._step_etdrk4()
         increment_diagnostics(self,)
         self._print_status()
         save_snapshots(self,fields=['t','q','phi'])
 
     def _initialize_time(self):
-        """Set up timestep stuff"""
-        self.t=0        # actual time
-        self.tc=0       # timestep number
+
+    """ Initialize model clock and other time variables.
+    """
+
+        self.t=0        # time
+        self.tc=0       # time-step number
 
     def _initialize_grid(self):
-        """Set up spatial and spectral grids and related constants"""
+
+        """ Create spatial and spectral grids and normalization constants.
+        """
+
         self.x,self.y = np.meshgrid(
             np.arange(0.5,self.nx,1.)/self.nx*self.L,
             np.arange(0.5,self.ny,1.)/self.ny*self.W )
@@ -239,7 +262,9 @@ Parameters
         self.wv2i[iwv2] = self.wv2[iwv2]**-1
 
     def _initialize_filter(self):
-        """Set up frictional filter or dealiasing."""
+
+        """ Set up spectral filter or dealiasing."""
+
         if self.use_filter:
             cphi=0.65*pi
             wvx=np.sqrt((self.k*self.dx)**2.+(self.l*self.dy)**2.)
@@ -256,6 +281,9 @@ Parameters
             self.logger.info(' No dealiasing; no filter')
 
     def _initialize_logger(self):
+
+    """ Initialize logger.
+    """
 
         self.logger = logging.getLogger(__name__)
 
@@ -275,7 +303,16 @@ Parameters
 
 
     def _step_etdrk4(self):
-        """ march the system forward using a ETDRK4 scheme """
+
+    """ Take one step forward using an exponential time-dfferencing method
+        with a Runge-Kutta 4 scheme.
+
+        Rereferences
+        ------------
+        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+    """
 
         self._calc_energy_conversion()
         k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
@@ -360,12 +397,15 @@ Parameters
 
     def _initialize_etdrk4(self):
 
-        """ This performs pre-computations for the Expotential Time Differencing
-            Fourth Order Runge Kutta time stepper. The linear part is calculated
-            exactly.
-            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-                Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005. """
+    """ Compute coefficients of the exponential time-dfferencing method
+        with a Runge-Kutta 4 scheme.
 
+        Rereferences
+        ------------
+        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+    """
 
         #
         # coefficients for q-equation
@@ -413,13 +453,29 @@ Parameters
 
 
     def jacobian_psi_phi(self):
-        """ Compute the Jacobian phix and phiy. """
+
+        """ Compute the advective term–––the Jacobian between psi and phi.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,phi)
+        """
+
         jach = self.fft( (self.u*self.phix + self.v*self.phiy) )
         jach[0,0] = 0
         return jach
 
     def jacobian_psi_q(self):
-        """ Compute the Jacobian between psi and q. Return in Fourier space. """
+
+        """ Compute the advective term–––the Jacobian between psi and q.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,q)
+        """
+
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         q = self.ifft(self.qh).real
         jach = self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
@@ -428,30 +484,47 @@ Parameters
         return jach
 
     def _invert(self):
-        """ From qh compute ph and compute velocity. """
-
         raise NotImplementedError(
             'needs to be implemented by Model subclass')
 
     def _calc_rel_vorticity(self):
-        """ from psi compute relative vorticity,
-            this is surpassed by _calc_rel_vorticity in CoupledModel """
+
+        """ Compute the geostrophic relative vorticity–––the Laplacian of the
+            streamfuctions.
+
+            This methods is surpassed by subclass-specific methods.
+
+        """
+
         self.q_psi = (self.q)
 
     def _calc_strain(self):
-        """ from psi compute geostrophic rate of strain """
+
+        """ Compute the geostrophic rate of strain.
+        """
         pxx,pyy = self.ifft(-self.k*self.k*self.ph).real, self.ifft(-self.l*self.l*self.ph).real
         pxy = self.ifft(-self.k*self.l*self.ph).real
         self.qg_strain =  4*(pxy**2)+(pxx-pyy)**2
 
     def _calc_OW(self):
-        """ calculate the Okubo-Weiss parameter """
+
+        """ Compute the Okubo-Weiss parameter.
+        """
+
         self._calc_rel_vorticity()
         self._calc_strain()
         return self.qg_strain**2 - self.q_psi**2
 
     def set_q(self,q):
-        """ Initialize pv """
+
+        """ Initialize the potential vorticity.
+
+        Parameters
+        ----------
+        q: an array of floats of dimension (nx,ny):
+                The potential vorticity in physical space.
+        """
+
         self.q = q
         self.qh = self.fft(self.q)
         self._invert()
@@ -461,18 +534,47 @@ Parameters
 
 
     def set_phi(self,phi):
-        """ Initialize pv """
+
+        """ Initialize the near-inertial velocity =.
+
+        Parameters
+        ----------
+        phi: an array of complex floats of dimension (nx,ny):
+                The near-inertial velocity, phi = uw + i vw, in physical space.
+        """
+
         self.phi = phi
         self.phih = self.fft(self.phi)
         self.Pw = self._calc_pe_niw()
         self.Kw = self._calc_ke_niw()
 
     def _initialize_fft(self):
+
+        """ Define the two-dimensional FFT methods.
+        """
+
         self.fft =  (lambda x : np.fft.fft2(x))
         self.ifft = (lambda x : np.fft.ifft2(x))
 
     def _print_status(self):
-        """Output some basic stats."""
+
+        """ Print out the the model status.
+                Step: integer
+                        Number of time steps completed
+                Time: float
+                        The elapsed time.
+                P: float
+                        The percentage of simulation completed.
+                Ke: float
+                        The geostrophic kinetic energy.
+                Kw: float
+                        The near-inertial kinetic energy.
+                Pw: float
+                        The near-inertial potential energy.
+                CFL: float
+                        The CFL number.
+        """
+
         self.tc += 1
         self.t += self.dt
 
@@ -487,71 +589,85 @@ Parameters
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
 
     def _calc_ke_qg(self):
+    """ Compute geostrophic kinetic energy, Ke. """"
         return 0.5*self.spec_var(self.wv*self.ph)
-        #self._invert()
-        #self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
-        #return 0.5*(self.u**2+self.v**2).mean()
 
     def _calc_ke_niw(self):
+    """ Compute near-inertial kinetic energy, Kw. """"
         return 0.5*(np.abs(self.phi)**2).mean()
 
     def _calc_pe_niw(self):
+    """ Compute near-inertial potential energy, Pw. """"
         self.phix, self.phiy = self.ifft(self.ik*self.phih),self.ifft(self.il*self.phih)
         return 0.25*( np.abs(self.phix)**2 +  np.abs(self.phiy)**2 ).mean()/self.kappa2
 
     def _calc_conc(self):
-        """ Calculates the concentratin parameter of NIWs """
+    """ Compute the correlation, C, between near-inertial velocity variance and
+        relative vorticity.
+        A measure of wave concentration in cyclones of anticyclones.
+    """"
         self.upsilon = np.abs(self.phi)**2 -  (np.abs(self.phi)**2).mean()
         return (self.upsilon*self.q_psi).mean()/self.upsilon.std()/self.q_psi.std()
 
     def _calc_skewness(self):
-        """ calculates skewness in relative vorticity """
-        #self.qpsi = self.ifft(-self.wv2*self.ph).real
+        """ Compute skewness of relative vorticity. """
         return ( (self.q_psi**3).mean() / (((self.q_psi**2).mean())**1.5) )
 
     def _calc_ens(self):
-        """ calculates potential enstrophy """
+        """ Compute geostrophic potential enstrophy, S. """
         return 0.5*(self.q**2).mean()
 
     def _calc_ep_phi(self):
-        """ calculates hyperviscous dissipation of NIW KE  """
+        """ Compute dissipation of Kw.  """
         return -self.nu4w*(np.abs(self.lapphi)**2).mean()\
                 - self.nuw*(np.abs(self.phix)**2+np.abs(self.phiy)**2).mean()\
                 -self.muw*(np.abs(self.phi)**2).mean()
 
     def _calc_ep_psi(self):
-        """ calculates hyperviscous dissipation of QG KE """
-        #return -self.nu4*self.spec_var(self.wv*self.qh)
+        """ Compute dissipation of QG KE. """
         lap2psi = self.ifft(self.wv4*self.ph).real
         lapq = self.ifft(-self.wv2*self.qh).real
         return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
                 + self.mu*(self.p*self.q).mean()
-        #qx, qy = self.ifft(self.ik*self.qh), self.ifft(self.il*self.qh)
-        #return -self.nu4*(qx**2 + qy**2).mean()
 
     def _calc_chi_q(self):
-        """"  calculates hyperviscous dissipation of QG Enstrophy """
+        """"  Compute dissipation of S. """
         return -self.nu4*self.spec_var(self.wv2*self.qh)
 
     def _calc_chi_phi(self):
-        """"  calculates hyperviscous dissipation of NIW PE """
+        """"  Compute dissipation of Pw. """
         lphix, lphiy = self.ifft(-self.ik*self.wv2*self.phih),\
                             self.ifft(-self.il*self.wv2*self.phih)
-        # check this.
         return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2\
                 -0.5*self.nuw*(np.abs(self.lapphi)**2).mean()/self.kappa2\
                 -0.5*self.muw*(np.abs(self.phix)**2 + np.abs(self.phiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
-        """ compute variance of p from Fourier coefficients ph """
+        """ Compute variance of a variable `p` from its Fourier transform `ph` """
         var_dens = np.abs(ph)**2 / self.M**2
         var_dens[0,0] = 0.
         return var_dens.sum()
 
     def _calc_cfl(self):
+    """ Compute the CFL number. """
         return np.abs(np.hstack([self.u, self.v,np.abs(self.phi)])).max()*self.dt/self.dx
 
     def _calc_energy_conversion(self):
+
+        """ Compute energy conversion terms.
+
+                gamma1: the refractive conversion between geostrophic kinetic
+                            energy and near-inertial potential energy.
+                gamma2: the advective conversion between geostrophic kinetic
+                            energy and near-inertial potential energy.
+                xi1: the refractive generation of geostrophic kinetic energy due
+                            wave dissipation.
+                xi2: the advective generation of geostrophic kinetic energy due
+                            wave dissipation.
+                pi: the conversion of kinetic energy from laterally coherent
+                    to incoherent near-inertial waves (a measure of loss of
+                    lateral coherence).
+        """
 
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         self._calc_rel_vorticity()
@@ -581,6 +697,11 @@ Parameters
         self.ike_niw = self.ke_niw-self.cke_niw
 
     def _initialize_diagnostics(self):
+
+        """ Initialize kernel and subclass-specific the diagnostics dictionary
+            with each diganostic and an entry.
+        """
+
         self.diagnostics = dict()
         self._initialize_kernel_diagnostics()
         self._initialize_class_diagnostics()
@@ -738,9 +859,11 @@ Parameters
         )
 
     def _calc_derived_fields(self):
+        """ Compute derived fields necessary for model diagnostics. """
         self._calc_kernel_derived_fields()
         self._calc_class_derived_fields()
 
     def _calc_kernel_derived_fields(self):
+        """ Compute kernel-specific derived fields necessary for model diagnostics. """
         self._calc_energy_conversion()
         self._calc_icke_niw()
