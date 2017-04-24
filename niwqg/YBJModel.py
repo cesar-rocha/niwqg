@@ -28,8 +28,8 @@ class Model(Kernel.Kernel):
 
     def _allocate_variables(self):
 
-    """ Allocate variables so that variable addresses are close in memory.
-    """
+        """ Allocate variables so that variable addresses are close in memory.
+        """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -89,15 +89,15 @@ class Model(Kernel.Kernel):
     def _initialize_etdrk4(self):
 
 
-    """ Compute coefficients of the exponential time-dfferencing method
-        with a Runge-Kutta 4 scheme.
+        """ Compute coefficients of the exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
-        Rereferences
-        ------------
-        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
 
-    """
+        """
 
         M = 32.  # number of points for line integral in the complex plane
         rho = 1.  # radius for complex integration
@@ -147,12 +147,12 @@ class Model(Kernel.Kernel):
 
     def _initialize_class_diagnostics(self):
 
-    """ Compute subclass-specific derived fields.
-    """
+        """ Compute subclass-specific derived fields.
+        """
         pass
 
     def _calc_class_derived_fields(self):
-    """  Compute the geostrophic relative vorticity–––the Laplacian of the
-            streamfuctions.
-    """
+        """  Compute the geostrophic relative vorticity–––the Laplacian of the
+                streamfuctions.
+        """
         pass

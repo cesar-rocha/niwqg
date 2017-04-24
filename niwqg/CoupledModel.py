@@ -32,8 +32,8 @@ class Model(Kernel.Kernel):
 
     def _allocate_variables(self):
 
-    """ Allocate variables so that variable addresses are close in memory.
-    """
+        """ Allocate variables so that variable addresses are close in memory.
+        """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -145,7 +145,7 @@ class Model(Kernel.Kernel):
     def _calc_rel_vorticity(self):
 
         """  Compute the geostrophic relative vorticity–––the Laplacian of the
-            streamfuctions.
+                streamfuctions.
         """
 
         self.qw = self.ifft(self.qwh).real

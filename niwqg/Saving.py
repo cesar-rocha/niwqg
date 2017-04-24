@@ -5,14 +5,14 @@ import h5py
 
 def initialize_save_snapshots(self,path):
 
-""" Initializes class variables for saving snapshots.
-    Sets the path and creates directory if needed.
+    """ Initializes class variables for saving snapshots.
+        Sets the path and creates directory if needed.
 
-    Parameters
-    ----------
-    path:  string (required)
-                Location to save model outputs.
-"""
+        Parameters
+        ----------
+        path:  string (required)
+                    Location to save model outputs.
+    """
 
     self.fno = path
 
@@ -22,13 +22,13 @@ def initialize_save_snapshots(self,path):
 
 def file_exist(fno,overwrite=True):
 
-""" Check whether file exists.
+    """ Check whether file exists.
 
-    Parameters
-    ----------
-    overwrite:  string (optional)
-                    If True, then overwrite extant files.
-"""
+        Parameters
+        ----------
+        overwrite:  string (optional)
+                        If True, then overwrite extant files.
+    """
 
     if os.path.exists(fno):
         if overwrite:
@@ -37,8 +37,8 @@ def file_exist(fno,overwrite=True):
 
 def save_setup(self,):
 
-""" Save set up of model simulations.
-"""
+    """ Save set up of model simulations.
+    """
 
     if self.save_to_disk:
 
@@ -58,14 +58,14 @@ def save_setup(self,):
 
 def save_snapshots(self, fields=['t','q','p']):
 
-""" Save snapshots of model simulations.
+    """ Save snapshots of model simulations.
 
-    Parameters
-    ----------
-    fields:  list of strings (optional)
-                The fields to save. Default is time ('t'), potential vorcitiy ('q')
-                                    and streamfunction ('p').
-"""
+        Parameters
+        ----------
+        fields:  list of strings (optional)
+                    The fields to save. Default is time ('t'), potential vorcitiy ('q')
+                                        and streamfunction ('p').
+    """
 
     if ( ( not (self.tc%self.tsnaps) ) & (self.save_to_disk) ):
 
@@ -87,8 +87,8 @@ def save_snapshots(self, fields=['t','q','p']):
 
 def save_diagnostics(self):
 
-""" Save diagnostics of model simulations.
-"""
+    """ Save diagnostics of model simulations.
+    """
     fno = self.fno + '/diagnostics.h5'
 
     file_exist(fno,overwrite=self.overwrite)

@@ -8,63 +8,63 @@ from .Saving import *
 
 class Kernel(object):
 
-""" Python class that the kernel of single-vertical wavenumber near-inertial
-    wave models–––different wave models are defined as subclasses that define
-    the barotropic quasigeostrophic potential vorticity inversion. The model is
-    pseudospectral model in a doubly periodic domain. Physical parameters observe
-    SI units.
+    """ Python class that the kernel of single-vertical wavenumber near-inertial
+        wave models–––different wave models are defined as subclasses that define
+        the barotropic quasigeostrophic potential vorticity inversion. The model is
+        pseudospectral model in a doubly periodic domain. Physical parameters observe
+        SI units.
 
-Parameters
------------
-    nx: integer (optional)
-            Number of grid points in the x-direction.
-            The number of modes is nx/2+1.
-    ny: integer (optional)
-            Number of grid points in the y-direction.
-            If None, then ny=nx.
-    L:  float (optional)
-            Domain size.
-    dt: float (optional)
-            Time step for time integration.
-    twrite: integer (optional)
-            Print model status to screen every twrite time steps.
-    tmax: float (optional)
-            Total time of simulation.
-    U: float (optional)
-            Uniform zonal flow
-    f:  float (optional)
-            Coriolis frequency
-    N:  float (optional)
-            Buoyancy frequency
-    m:  float (optional)
-            Vertical wavenumber of near-inertial waves
-    use_filter: bool (optional)
-            If True, then uses exponential spectral filter.
-    nu4: float (optional)
-            Fouth-order hyperdiffusivity of potential vorticity.
-    nu: float (optional)
-            Diffusivity of potential vorticity.
-    mu: float (optional)
-            Linear drag of potential vorticity.
-    nu4w: float (optional)
-            Fouth-order hyperviscosity for near-inertial waves.
-    nuw: float (optional)
-            Viscosity for for near-inertial waves.
-    muw: float (optional)
-            Linear drag for for near-inertial waves.
-    dealias: bool (optional)
-            If True, then dealias solution using 2/3 rule.
-    save_to_disk: bool (optional)
-            If True, then save parameters and snapshots to disk.
-    overwrite: bool (optional)
-            If True, then overwrite extant files.
-    tsave_snapshots: integer (optional)
-            Save snapshots every tsave_snapshots time steps.
-    tdiags: integer (optional)
-            Calculate diagnostics every tdiags time steps.
-    path: string (optional)
-            Location for saving output files.
-"""
+    Parameters
+    -----------
+        nx: integer (optional)
+                Number of grid points in the x-direction.
+                The number of modes is nx/2+1.
+        ny: integer (optional)
+                Number of grid points in the y-direction.
+                If None, then ny=nx.
+        L:  float (optional)
+                Domain size.
+        dt: float (optional)
+                Time step for time integration.
+        twrite: integer (optional)
+                Print model status to screen every twrite time steps.
+        tmax: float (optional)
+                Total time of simulation.
+        U: float (optional)
+                Uniform zonal flow
+        f:  float (optional)
+                Coriolis frequency
+        N:  float (optional)
+                Buoyancy frequency
+        m:  float (optional)
+                Vertical wavenumber of near-inertial waves
+        use_filter: bool (optional)
+                If True, then uses exponential spectral filter.
+        nu4: float (optional)
+                Fouth-order hyperdiffusivity of potential vorticity.
+        nu: float (optional)
+                Diffusivity of potential vorticity.
+        mu: float (optional)
+                Linear drag of potential vorticity.
+        nu4w: float (optional)
+                Fouth-order hyperviscosity for near-inertial waves.
+        nuw: float (optional)
+                Viscosity for for near-inertial waves.
+        muw: float (optional)
+                Linear drag for for near-inertial waves.
+        dealias: bool (optional)
+                If True, then dealias solution using 2/3 rule.
+        save_to_disk: bool (optional)
+                If True, then save parameters and snapshots to disk.
+        overwrite: bool (optional)
+                If True, then overwrite extant files.
+        tsave_snapshots: integer (optional)
+                Save snapshots every tsave_snapshots time steps.
+        tdiags: integer (optional)
+                Calculate diagnostics every tdiags time steps.
+        path: string (optional)
+                Location for saving output files.
+    """
 
 
     def __init__(
@@ -156,18 +156,17 @@ Parameters
 
     def run_with_snapshots(self, tsnapstart=0., tsnapint=432000.):
 
+        """ Run the model for prescribed time and yields to user code.
 
-    """ Run the model for prescribed time and yields to user code.
+            Parameters
+            ----------
 
-        Parameters
-        ----------
+            tsnapstart : float
+                            The timestep at which to begin yielding.
+            tstapint : int (number of time steps)
+                            The interval at which to yield.
 
-        tsnapstart : float
-                        The timestep at which to begin yielding.
-        tstapint : int (number of time steps)
-                        The interval at which to yield.
-
-    """
+        """
 
         tsnapints = np.ceil(tsnapint/self.dt)
 
@@ -179,13 +178,13 @@ Parameters
 
     def run(self):
 
-    """ Run the model until the end (`tmax`).
+        """ Run the model until the end (`tmax`).
 
-        The algorithm is:
-            1) Save snapshots (i.e., save the initial condition).
-            2) Take a tmax/dt steps forward.
-            3) Save diagnostics.
-    """
+            The algorithm is:
+                1) Save snapshots (i.e., save the initial condition).
+                2) Take a tmax/dt steps forward.
+                3) Save diagnostics.
+        """
 
         # save initial conditions
         if self.save_to_disk:
@@ -201,12 +200,12 @@ Parameters
 
     def _step_forward(self):
 
-    """ Step solutions forwards. The algorithm is:
-            1) Take one time step with ETDRK4 scheme.
-            2) Incremente diagnostics.
-            3) Print status.
-            4) Save snapshots.
-    """
+        """ Step solutions forwards. The algorithm is:
+                1) Take one time step with ETDRK4 scheme.
+                2) Incremente diagnostics.
+                3) Print status.
+                4) Save snapshots.
+        """
 
         self._step_etdrk4()
         increment_diagnostics(self,)
@@ -215,8 +214,8 @@ Parameters
 
     def _initialize_time(self):
 
-    """ Initialize model clock and other time variables.
-    """
+        """ Initialize model clock and other time variables.
+        """
 
         self.t=0        # time
         self.tc=0       # time-step number
@@ -282,8 +281,8 @@ Parameters
 
     def _initialize_logger(self):
 
-    """ Initialize logger.
-    """
+        """ Initialize logger.
+        """
 
         self.logger = logging.getLogger(__name__)
 
@@ -304,15 +303,15 @@ Parameters
 
     def _step_etdrk4(self):
 
-    """ Take one step forward using an exponential time-dfferencing method
-        with a Runge-Kutta 4 scheme.
+        """ Take one step forward using an exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
-        Rereferences
-        ------------
-        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
 
-    """
+        """
 
         self._calc_energy_conversion()
         k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
@@ -397,15 +396,15 @@ Parameters
 
     def _initialize_etdrk4(self):
 
-    """ Compute coefficients of the exponential time-dfferencing method
-        with a Runge-Kutta 4 scheme.
+        """ Compute coefficients of the exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
-        Rereferences
-        ------------
-        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
 
-    """
+        """
 
         #
         # coefficients for q-equation
@@ -589,23 +588,23 @@ Parameters
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
 
     def _calc_ke_qg(self):
-    """ Compute geostrophic kinetic energy, Ke. """"
+        """ Compute geostrophic kinetic energy, Ke. """
         return 0.5*self.spec_var(self.wv*self.ph)
 
     def _calc_ke_niw(self):
-    """ Compute near-inertial kinetic energy, Kw. """"
+        """ Compute near-inertial kinetic energy, Kw. """
         return 0.5*(np.abs(self.phi)**2).mean()
 
     def _calc_pe_niw(self):
-    """ Compute near-inertial potential energy, Pw. """"
+        """ Compute near-inertial potential energy, Pw. """
         self.phix, self.phiy = self.ifft(self.ik*self.phih),self.ifft(self.il*self.phih)
         return 0.25*( np.abs(self.phix)**2 +  np.abs(self.phiy)**2 ).mean()/self.kappa2
 
     def _calc_conc(self):
-    """ Compute the correlation, C, between near-inertial velocity variance and
-        relative vorticity.
-        A measure of wave concentration in cyclones of anticyclones.
-    """"
+        """ Compute the correlation, C, between near-inertial velocity variance and
+            relative vorticity.
+            A measure of wave concentration in cyclones of anticyclones.
+        """
         self.upsilon = np.abs(self.phi)**2 -  (np.abs(self.phi)**2).mean()
         return (self.upsilon*self.q_psi).mean()/self.upsilon.std()/self.q_psi.std()
 
@@ -649,7 +648,7 @@ Parameters
         return var_dens.sum()
 
     def _calc_cfl(self):
-    """ Compute the CFL number. """
+        """ Compute the CFL number. """
         return np.abs(np.hstack([self.u, self.v,np.abs(self.phi)])).max()*self.dt/self.dx
 
     def _calc_energy_conversion(self):

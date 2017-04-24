@@ -140,8 +140,8 @@ class Model(object):
 
     def _allocate_variables(self):
 
-    """ Allocate variables so that variable addresses are close in memory.
-    """
+        """ Allocate variables so that variable addresses are close in memory.
+        """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -160,17 +160,17 @@ class Model(object):
 
     def run_with_snapshots(self, tsnapstart=0., tsnapint=432000.):
 
-    """ Run the model for prescribed time and yields to user code.
+        """ Run the model for prescribed time and yields to user code.
 
-        Parameters
-        ----------
+            Parameters
+            ----------
 
-        tsnapstart : float
-                        The timestep at which to begin yielding.
-        tstapint : int (number of time steps)
-                        The interval at which to yield.
+            tsnapstart : float
+                            The timestep at which to begin yielding.
+            tstapint : int (number of time steps)
+                            The interval at which to yield.
 
-    """
+        """
 
         tsnapints = np.ceil(tsnapint/self.dt)
 
@@ -182,13 +182,13 @@ class Model(object):
 
     def run(self):
 
-    """ Run the model until the end (`tmax`).
+        """ Run the model until the end (`tmax`).
 
-        The algorithm is:
-            1) Save snapshots (i.e., save the initial condition).
-            2) Take a tmax/dt steps forward.
-            3) Save diagnostics.
-    """
+            The algorithm is:
+                1) Save snapshots (i.e., save the initial condition).
+                2) Take a tmax/dt steps forward.
+                3) Save diagnostics.
+        """
 
         # save initial conditions
         if self.save_to_disk:
@@ -204,12 +204,12 @@ class Model(object):
 
     def _step_forward(self):
 
-    """ Step solutions forwards. The algorithm is:
-            1) Take one time step with ETDRK4 scheme.
-            2) Incremente diagnostics.
-            3) Print status.
-            4) Save snapshots.
-    """
+        """ Step solutions forwards. The algorithm is:
+                1) Take one time step with ETDRK4 scheme.
+                2) Incremente diagnostics.
+                3) Print status.
+                4) Save snapshots.
+        """
 
         self._step_etdrk4()
         increment_diagnostics(self,)
@@ -218,8 +218,8 @@ class Model(object):
 
     def _initialize_time(self):
 
-    """ Initialize model clock and other time variables.
-    """
+        """ Initialize model clock and other time variables.
+        """
 
         self.t=0        # time
         self.tc=0       # time-step number
@@ -302,8 +302,8 @@ class Model(object):
 
     def _initialize_logger(self):
 
-    """ Initialize logger.
-    """
+        """ Initialize logger.
+        """
 
         self.logger = logging.getLogger(__name__)
 
@@ -325,15 +325,15 @@ class Model(object):
 
     def _step_etdrk4(self):
 
-    """ Take one step forward using an exponential time-dfferencing method
-        with a Runge-Kutta 4 scheme.
+        """ Take one step forward using an exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
-        Rereferences
-        ------------
-        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
 
-    """
+        """
 
         self.qh0 = self.qh.copy()
         Fn0 = -self.jacobian_psi_q()
@@ -390,15 +390,15 @@ class Model(object):
 
     def _initialize_etdrk4(self):
 
-    """ Compute coefficients of the exponential time-dfferencing method
-        with a Runge-Kutta 4 scheme.
+        """ Compute coefficients of the exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
-        Rereferences
-        ------------
-        See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-        Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
 
-    """
+        """
         #
         # coefficients for q-equation
         #
@@ -452,11 +452,12 @@ class Model(object):
 
         """ Compute the advective term–––the Jacobian between psi and q.
 
-        Returns
-        -------
-        complex array of floats
-            The Fourier transform of Jacobian(psi,q)
+            Returns
+            -------
+            complex array of floats
+                The Fourier transform of Jacobian(psi,q)
         """
+
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         q = self.ifft(self.qh).real
         return self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
@@ -548,11 +549,11 @@ class Model(object):
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
 
     def _calc_ke_qg(self):
-        """ Compute geostrophic kinetic energy, Ke. """"
+        """ Compute geostrophic kinetic energy, Ke. """
         return 0.5*self.spec_var(self.wv*self.ph)
 
     def _calc_ens(self):
-        """ Compute geostrophic potential enstrophy. """"
+        """ Compute geostrophic potential enstrophy. """
         return 0.5*self.spec_var(self.qh)
 
     def _calc_ep_psi(self):
