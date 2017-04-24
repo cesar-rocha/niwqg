@@ -32,6 +32,12 @@ Parameters
             Total time of simulation.
     U: float (optional)
             Uniform zonal flow
+    f:  float (optional)
+            Coriolis frequency
+    N:  float (optional)
+            Buoyancy frequency
+    m:  float (optional)
+            Vertical wavenumber of near-inertial waves
     use_filter: bool (optional)
             If True, then uses exponential spectral filter.
     nu4: float (optional)
