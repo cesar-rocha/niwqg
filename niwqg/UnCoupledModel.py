@@ -3,8 +3,20 @@ from . import Kernel
 from .Diagnostics import *
 
 class Model(Kernel.Kernel):
-    """ A subclass that represents the YBJ-QG uncoupled model """
 
+    """ A subclass that represents the Young & Ben Jelloul uncoupled model
+        of single-vertical wavenumber near-inertial waves and barotropic
+        quasigeostrophic.
+
+        It defines the quasigeostrophic inversion relation and the diagnostics
+        specific to this subclass.
+
+        Reference
+        ----------
+        Young, W. R. & Ben Jelloul, M. 1997 "Propagation of near-inertial
+        oscillations through a geostrophic flow." J. Mar. Res. 55 (4), 735–766.
+
+    """
     def __init__(
         self,
         **kwargs
@@ -56,5 +68,3 @@ class Model(Kernel.Kernel):
     def _calc_rel_vorticity(self):
         """ from psi compute relative vorticity """
         self.q_psi = self.q
-        
-

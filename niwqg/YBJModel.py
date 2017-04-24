@@ -2,8 +2,20 @@ import numpy as np
 from . import Kernel
 
 class Model(Kernel.Kernel):
-    """ A subclass that represents the YBJ-QG uncoupled model
-        with STEADY QG flow """
+
+    """ A subclass that represents the Young & Ben Jelloul uncoupled model
+        of single-vertical wavenumber near-inertial waves and STEADY
+        barotropic quasigeostrophic flow.
+
+        It defines the quasigeostrophic inversion relation and the diagnostics
+        specific to this subclass.
+
+        Reference
+        ----------
+        Young, W. R. & Ben Jelloul, M. 1997 "Propagation of near-inertial
+        oscillations through a geostrophic flow." J. Mar. Res. 55 (4), 735–766.
+
+    """
 
     def __init__(
         self,
@@ -81,7 +93,7 @@ class Model(Kernel.Kernel):
         # the exponent for the linear part
         self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)  -1j*self.k*self.U
         self.c += -self.nu4w*self.wv4 - 0.5j*self.f*(self.wv2/self.kappa2)\
-                        - self.nuw*self.wv2 - self.muw        
+                        - self.nuw*self.wv2 - self.muw
         ch = self.c*self.dt
         self.expchw = np.exp(ch)
         self.expch_hw = np.exp(ch/2.)

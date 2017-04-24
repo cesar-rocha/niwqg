@@ -2,7 +2,23 @@ import numpy as np
 from . import Kernel
 
 class Model(Kernel.Kernel):
-    """ A subclass that represents the YBJ-QG coupled model """
+
+    """ A subclass that represents a quasilinear version of the Xie & Vanneste
+        coupled model of single-vertical wavenumber near-inertial waves and barotropic
+        quasigeostrophic flow.
+
+        It defines the quasigeostrophic inversion relation–––with wave effects
+        –––and the diagnostics specific to this subclass.
+
+        Reference
+        ----------
+
+        "A generalised-Lagrangian-mean model of the
+            interactions between near-inertial waves
+            and mean flow," Journal of Fluid Mechanics,
+            (2015), vol. 774, pp. 143–169. doi:10.1017/jfm.2015.251
+
+    """
 
     def __init__(
         self,
