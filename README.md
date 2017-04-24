@@ -55,6 +55,9 @@ The code is under rapid development by [@crocha700](https://github.com/crocha700
 as part of the project "Stimulated Loss of Balance" (SLOB) with
 [@glwagner](https://github.com/glwagner) and [@wry55](https://github.com/wry55).
 
-Guidelines for contributions will soon be posted in the documentation. For now,
-the only requirement is that contributions be submitted via pull-request of
-a cut-off branch (not master).
+Please, submit contributions via pull-request of
+a cut-off branch (not master). the PR must include the
+output of the test suite.
+
+# Funding
+This project is funded by the [National Aeronautics and Space Administration](https://www.nasa.gov) under grant NNX16AO5OH.
