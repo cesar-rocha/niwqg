@@ -56,8 +56,7 @@ as part of the project "Stimulated Loss of Balance" (SLOB) with
 [@glwagner](https://github.com/glwagner) and [@wry55](https://github.com/wry55).
 
 Please, submit contributions via pull-request of
-a cut-off branch (not master). the PR must include the
-output of the test suite.
+a cut-off branch (not master). The pull-request must include the output of the test suite.
 
 # Funding
 This project is funded by the [National Aeronautics and Space Administration](https://www.nasa.gov) under grant NNX16AO5OH.
