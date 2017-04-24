@@ -8,9 +8,11 @@ from .Saving import *
 
 class Kernel(object):
 
-""" Python class that represents the near-inertial wave model coupled with
-    barotropic quasigeostrophic dynamics. The model is pseudospectral model
-    in a doubly periodic domain. Physical parameters observe SI units.
+""" Python class that the kernel of single-vertical wavenumber near-inertial
+    wave models–––different wave models are defined as subclasses that define
+    the barotropic quasigeostrophic potential vorticity inversion. The model is
+    pseudospectral model in a doubly periodic domain. Physical parameters observe
+    SI units.
 
 Parameters
 -----------
