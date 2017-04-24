@@ -8,7 +8,56 @@ from .Saving import *
 
 class Kernel(object):
 
-    """" QG-NIW model """
+""" Python class that represents the near-inertial wave model coupled with
+    barotropic quasigeostrophic dynamics. The model is pseudospectral model
+    in a doubly periodic domain. Physical parameters observe SI units.
+
+Parameters
+-----------
+    nx: integer (optional)
+            Number of grid points in the x-direction.
+            The number of modes is nx/2+1.
+    ny: integer (optional)
+            Number of grid points in the y-direction.
+            If None, then ny=nx.
+    L:  float (optional)
+            Domain size.
+    dt: float (optional)
+            Time step for time integration.
+    twrite: integer (optional)
+            Print model status to screen every twrite time steps.
+    tmax: float (optional)
+            Total time of simulation.
+    U: float (optional)
+            Uniform zonal flow
+    use_filter: bool (optional)
+            If True, then uses exponential spectral filter.
+    nu4: float (optional)
+            Fouth-order hyperdiffusivity of potential vorticity.
+    nu: float (optional)
+            Diffusivity of potential vorticity.
+    mu: float (optional)
+            Linear drag of potential vorticity.
+    nu4w: float (optional)
+            Fouth-order hyperviscosity for near-inertial waves.
+    nuw: float (optional)
+            Viscosity for for near-inertial waves.
+    muw: float (optional)
+            Linear drag for for near-inertial waves.
+    dealias: bool (optional)
+            If True, then dealias solution using 2/3 rule.
+    save_to_disk: bool (optional)
+            If True, then save parameters and snapshots to disk.
+    overwrite: bool (optional)
+            If True, then overwrite extant files.
+    tsave_snapshots: integer (optional)
+            Save snapshots every tsave_snapshots time steps.
+    tdiags: integer (optional)
+            Calculate diagnostics every tdiags time steps.
+    path: string (optional)
+            Location for saving output files.
+"""
+
 
     def __init__(
         self,
