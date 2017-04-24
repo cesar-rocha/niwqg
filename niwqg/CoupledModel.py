@@ -3,7 +3,23 @@ from . import Kernel
 from .Diagnostics import *
 
 class Model(Kernel.Kernel):
-    """ A subclass that represents the YBJ-QG coupled model """
+
+    """ A subclass that represents the Xie & Vanneste coupled model
+        of single-vertical wavenumber near-inertial waves and barotropic
+        quasigeostrophic flow.
+
+        It defines the quasigeostrophic inversion relation–––with wave effects
+        –––and the diagnostics specific to this subclass.
+
+        Reference
+        ----------
+
+        "A generalised-Lagrangian-mean model of the
+            interactions between near-inertial waves
+            and mean flow," Journal of Fluid Mechanics,
+            (2015), vol. 774, pp. 143–169. doi:10.1017/jfm.2015.251
+
+    """
 
     def __init__(
         self,
@@ -15,7 +31,9 @@ class Model(Kernel.Kernel):
         super(Model, self).__init__(**kwargs)
 
     def _allocate_variables(self):
-        """ Allocate variables in memory """
+
+        """ Allocate variables so that variable addresses are close in memory.
+        """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -39,16 +57,29 @@ class Model(Kernel.Kernel):
 
 
     def jacobian_phic_phi(self):
-        """ Compute the Jacobian phix and phiy. """
+
+        """ Compute the Jacobian between conj(phi) and phi–––a wave potential
+            vorticity term.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(conj(phi),phi)
+        """
+
         self.phix, self.phiy = self.ifft(self.ik*self.phih), self.ifft(self.il*self.phih)
         jach = self.fft((1j*(np.conj(self.phix)*self.phiy - np.conj(self.phiy)*self.phix)).real)
         jach[0,0] = 0
         return jach
-        #phic = np.conj(self.phi)
-        #return self.ik*self.fft(phic*self.phiy) - self.il*self.fft(phic*self.phix)
 
     def _invert(self):
-        """ From qh compute ph and compute velocity. """
+
+        """ Calculate the streamfunction given the potential vorticity.
+            The algorithm is:
+                1) Calculate wave potential vorticity
+                2) Invert for wave, pw, and vortex stremfunctions, pv.
+                3) Calculate geostrophic stremfunction, p = pv+pw.
+        """
 
         # the wavy PV
         self.phi2 = np.abs(self.phi)**2
@@ -66,6 +97,11 @@ class Model(Kernel.Kernel):
         self.q = self.ifft(self.qh).real
 
     def _calc_ke_qg_decomp(self):
+
+        """ Compute vortex, wave, and cross terms of the geostrophic kinetic
+            energy.
+        """
+
         self.phq = -self.wv2i*self.qh
         self.ke_qg_q = 0.5*self.spec_var(self.wv*self.phq)
 
@@ -100,12 +136,17 @@ class Model(Kernel.Kernel):
         )
 
     def _calc_class_derived_fields(self):
+
+        """ Compute subclass-specific derived fields.
+        """
+
         self._calc_ke_qg_decomp()
-        #self._invert()
-        #self._calc_rel_vorticity()
 
     def _calc_rel_vorticity(self):
-        """ from psi compute relative vorticity """
+
+        """  Compute the geostrophic relative vorticity–––the Laplacian of the
+                streamfuctions.
+        """
+
         self.qw = self.ifft(self.qwh).real
         self.q_psi = (self.q-self.qw)
-

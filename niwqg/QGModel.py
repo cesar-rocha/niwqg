@@ -9,49 +9,92 @@ from .Saving import *
 
 class Model(object):
 
-    """" Barotropic QG model """
+    """ Python class that represents the barotropic quasigeostrophic
+        pseudospectral model in a doubly periodic domain. Physical parameters
+        observe SI units.
+
+    Parameters
+    -----------
+    nx: integer (optional)
+            Number of grid points in the x-direction.
+            The number of modes is nx/2+1.
+    ny: integer (optional)
+            Number of grid points in the y-direction.
+            If None, then ny=nx.
+    L:  float (optional)
+            Domain size.
+    dt: float (optional)
+            Time step for time integration.
+    twrite: integer (optional)
+            Print model status to screen every twrite time steps.
+    tmax: float (optional)
+            Total time of simulation.
+    U: float (optional)
+            Uniform zonal flow
+    use_filter: bool (optional)
+            If True, then uses exponential spectral filter.
+    nu4: float (optional)
+            Fouth-order hyperdiffusivity of potential vorticity.
+    nu: float (optional)
+            Diffusivity of potential vorticity.
+    mu: float (optional)
+            Linear drag of potential vorticity.
+    passive_scalar: bool (optional)
+            If True, then calculates passive scalar solution.
+    nu4c: float (optional)
+            Fouth-order hyperdiffusivity of passive scalar.
+    nuc: float (optional)
+            Diffusivity of passive scalar.
+    muc: float (optional)
+            Linear drag of passive scalar.
+    dealias: bool (optional)
+            If True, then dealias solution using 2/3 rule.
+    save_to_disk: bool (optional)
+            If True, then save parameters and snapshots to disk.
+    overwrite: bool (optional)
+            If True, then overwrite extant files.
+    tsave_snapshots: integer (optional)
+            Save snapshots every tsave_snapshots time steps.
+    tdiags: integer (optional)
+            Calculate diagnostics every tdiags time steps.
+    path: string (optional)
+            Location for saving output files.
+
+    """
 
     def __init__(
         self,
-        # grid size parameters
-        nx=128,                     # grid resolution
+        nx=128,
         ny=None,
-        L=5e5,                     # domain size is L [m]
-        # timestepping parameters
-        dt=10000.,                   # numerical timestep
-        twrite=1000.,               # interval for cfl and ke writeout (in timesteps)
+        L=5e5,
+        dt=10000.,
+        twrite=1000,
         tswrite=10,
-        tmax=250000.,           # total time of integration
-        tavestart=315360000.,       # start time for averaging
-        taveint=86400.,             # time interval used for summation in longterm average in seconds
+        tmax=250000.,
+        tavestart=315360000.,
+        taveint=86400.,
         use_filter = True,
-        # constants
-        U = .0,                     # uniform zonal flow
-        nu4=5.e9,                   # hyperviscosity
-        nu = 0,                     # viscosity
-        mu = 0,                     # linear drag
-        beta = 0,                   # beta
-        # passive scalar
+        U = .0,
+        nu4=5.e9,
+        nu = 0,
+        mu = 0,
+        beta = 0,
         passive_scalar = False,
         nu4c = 3.5e9,
         nuc = 0,
         muc = 0,
-        # fft
         dealias = False,
         save_to_disk=False,
         overwrite=True,
-        tsave_snapshots=10,  # in snapshots
-        tdiags = 10,  # diagnostics
+        tsave_snapshots=10,
+        tdiags = 10,
         path = 'output/'):
 
-        # put all the parameters into the object
-        # grid
         self.nx = nx
         self.ny = nx
         self.L = L
         self.W = L
 
-        # timestepping
         self.dt = dt
         self.twrite = twrite
         self.tswrite = tswrite
@@ -59,12 +102,9 @@ class Model(object):
         self.tavestart = tavestart
         self.taveint = taveint
         self.tdiags = tdiags
-        # scalar
         self.passive_scalar = passive_scalar
-        # fft
         self.dealias = dealias
 
-        # constants
         self.U = U
         self.beta = beta
         self.nu4 = nu4
@@ -74,13 +114,11 @@ class Model(object):
         self.nuc = nuc
         self.muc = muc
 
-        # saving stuff
         self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
         self.path = path
 
-        # flags
         self.use_filter = use_filter
 
         self._initialize_logger()
@@ -90,21 +128,20 @@ class Model(object):
         self._initialize_etdrk4()
         self._initialize_time()
 
-        # initialize path to save
         initialize_save_snapshots(self, self.path)
         save_setup(self, )
 
         self.cflmax = .5
 
-        # fft
         self._initialize_fft()
 
-        # diagnostics
         self._initialize_diagnostics()
 
 
     def _allocate_variables(self):
-        """ Allocate variables in memory """
+
+        """ Allocate variables so that variable addresses are close in memory.
+        """
 
         self.dtype_real = np.dtype('float64')
         self.dtype_cplx = np.dtype('complex128')
@@ -122,15 +159,17 @@ class Model(object):
         self.ph = np.zeros(self.shape_cplx,  self.dtype_cplx)
 
     def run_with_snapshots(self, tsnapstart=0., tsnapint=432000.):
-        """Run the model forward, yielding to user code at specified intervals.
 
-        Parameters
-        ----------
+        """ Run the model for prescribed time and yields to user code.
 
-        tsnapstart : int
-            The timestep at which to begin yielding.
-        tstapint : int
-            The interval at which to yield.
+            Parameters
+            ----------
+
+            tsnapstart : float
+                            The timestep at which to begin yielding.
+            tstapint : int (number of time steps)
+                            The interval at which to yield.
+
         """
 
         tsnapints = np.ceil(tsnapint/self.dt)
@@ -142,7 +181,14 @@ class Model(object):
         return
 
     def run(self):
-        """Run the model forward without stopping until the end."""
+
+        """ Run the model until the end (`tmax`).
+
+            The algorithm is:
+                1) Save snapshots (i.e., save the initial condition).
+                2) Take a tmax/dt steps forward.
+                3) Save diagnostics.
+        """
 
         # save initial conditions
         if self.save_to_disk:
@@ -158,20 +204,33 @@ class Model(object):
 
     def _step_forward(self):
 
+        """ Step solutions forwards. The algorithm is:
+                1) Take one time step with ETDRK4 scheme.
+                2) Incremente diagnostics.
+                3) Print status.
+                4) Save snapshots.
+        """
+
         self._step_etdrk4()
         increment_diagnostics(self,)
         self._print_status()
         save_snapshots(self,fields=['t','q','p'])
 
     def _initialize_time(self):
-        """Set up timestep stuff"""
-        self.t=0        # actual time
-        self.tc=0       # timestep number
+
+        """ Initialize model clock and other time variables.
+        """
+
+        self.t=0        # time
+        self.tc=0       # time-step number
         self.taveints = np.ceil(self.taveint/self.dt)
 
     ### initialization routines, only called once at the beginning ###
     def _initialize_grid(self):
-        """Set up spatial and spectral grids and related constants"""
+
+        """ Create spatial and spectral grids and normalization constants.
+        """
+
         self.x,self.y = np.meshgrid(
             np.arange(0.5,self.nx,1.)/self.nx*self.L,
             np.arange(0.5,self.ny,1.)/self.ny*self.W )
@@ -219,8 +278,8 @@ class Model(object):
             'needs to be implemented by Model subclass')
 
     def _initialize_filter(self):
-        """Set up frictional filter."""
-        # this defines the spectral filter (following Arbic and Flierl, 2003)
+
+        """Set up spectral filter or dealiasing."""
 
         if self.use_filter:
             cphi=0.65*pi
@@ -241,8 +300,10 @@ class Model(object):
     def _do_external_forcing(self):
         pass
 
-    # logger
     def _initialize_logger(self):
+
+        """ Initialize logger.
+        """
 
         self.logger = logging.getLogger(__name__)
 
@@ -263,7 +324,16 @@ class Model(object):
 
 
     def _step_etdrk4(self):
-        """ march the system forward using a ETDRK4 scheme """
+
+        """ Take one step forward using an exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
+
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+        """
 
         self.qh0 = self.qh.copy()
         Fn0 = -self.jacobian_psi_q()
@@ -320,12 +390,15 @@ class Model(object):
 
     def _initialize_etdrk4(self):
 
-        """ This performs pre-computations for the Expotential Time Differencing
-            Fourth Order Runge Kutta time stepper. The linear part is calculated
-            exactly.
-            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-                Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005. """
+        """ Compute coefficients of the exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+        """
         #
         # coefficients for q-equation
         #
@@ -376,20 +449,37 @@ class Model(object):
 
 
     def jacobian_psi_q(self):
-        """ Compute the Jacobian between psi and q. Return in Fourier space. """
+
+        """ Compute the advective term–––the Jacobian between psi and q.
+
+            Returns
+            -------
+            complex array of floats
+                The Fourier transform of Jacobian(psi,q)
+        """
+
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         q = self.ifft(self.qh).real
         return self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
 
     def jacobian_psi_c(self):
-        """ Compute the Jacobian between psi and c. Return in Fourier space. """
-        #self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
+
+        """ Compute the advective term of the passive scalar equation–––the
+            Jacobian between psi and c.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,c)
+        """
+
         self.c = self.ifft(self.ch).real
         return self.ik*self.fft(self.u*self.c) + self.il*self.fft(self.v*self.c)
 
     def _invert(self):
-        """ From qh compute ph and compute velocity. """
 
+        """ Calculate the streamfunction given the potential vorticity.
+        """
         # invert for psi
         self.ph = -self.wv2i*(self.qh)
 
@@ -397,64 +487,100 @@ class Model(object):
         self.p = self.ifft(self.ph)
 
     def set_q(self,q):
-        """ Initialize pv """
+
+        """ Initialize the potential vorticity.
+
+        Parameters
+        ----------
+        q: an array of floats of dimension (nx,ny):
+                The potential vorticity in physical space.
+        """
+
         self.q = q
         self.qh = self.fft(self.q)
         self._invert()
         self.Ke = self._calc_ke_qg()
 
     def set_c(self,c):
-        """ Initialize passive scalar """
+
+        """ Initialize the potential vorticity.
+
+        Parameters
+        ----------
+        c: an array of floats of dimension (nx,ny):
+                The passive scalar in physical space.
+        """
+
         self.c = c
         self.ch = self.fft(self.c)
 
     def _initialize_fft(self):
+
+        """ Define the two-dimensional FFT methods.
+        """
+
         self.fft =  (lambda x : np.fft.rfft2(x))
         self.ifft = (lambda x : np.fft.irfft2(x))
 
     def _print_status(self):
-        """Output some basic stats."""
+
+        """ Print out the the model status.
+                Step: integer
+                        Number of time steps completed
+                Time: float
+                        The elapsed time.
+                P: float
+                        The percentage of simulation completed.
+                Ke: float
+                        The geostrophic kinetic energy.
+                CFL: float
+                        The CFL number.
+        """
+
         self.tc += 1
         self.t += self.dt
 
         if (self.log_level) and ((self.tc % self.twrite)==0):
             self.ke = self._calc_ke_qg()
             self.cfl = self._calc_cfl()
-            self.logger.info('Step: %i, Time: %4.3e, P: %4.3e , KE QG: %4.3e, CFL: %4.3f'
+            self.logger.info('Step: %i, Time: %4.3e, P: %4.3e , Ke: %4.3e, CFL: %4.3f'
                     , self.tc,self.t, self.t/self.tmax, self.ke, self.cfl )
 
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
 
     def _calc_ke_qg(self):
+        """ Compute geostrophic kinetic energy, Ke. """
         return 0.5*self.spec_var(self.wv*self.ph)
-        #self.u, self.v = self.ifft(-self.il*self.ph), self.ifft(self.ik*self.ph)
-        #return 0.5*(self.u**2+self.v**2).mean()
 
     def _calc_ens(self):
+        """ Compute geostrophic potential enstrophy. """
         return 0.5*self.spec_var(self.qh)
 
     def _calc_ep_psi(self):
-        """ calculates hyperviscous dissipation of QG KE """
+        """ Compute dissipation of Ke """
         lap2psi = self.ifft(self.wv4*self.ph)
         lapq = self.ifft(-self.wv2*self.qh)
         return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
                 + self.mu*(self.p*self.q).mean()
 
     def _calc_chi_q(self):
-        """"  calculates hyperviscous dissipation of QG Enstrophy """
+        """"  Calculates dissipation of geostrophic potential
+              enstrophy, S. """
         return -self.nu4*self.spec_var(self.wv2*self.qh)
 
     def spec_var(self, ph):
-        """ compute variance of p from Fourier coefficients ph """
+        """ Compute variance of a variable `p` from its Fourier transform `ph` """
         var_dens = 2. * np.abs(ph)**2 / self.M**2
         # only half of coefs [0] and [nx/2+1] due to symmetry in real fft2
         var_dens[:,0] *= 0.5
         var_dens[:,-1] *= 0.5
-        var_dens[0,0] = 0  # remove mean
+        # remove mean
+        var_dens[0,0] = 0
         return var_dens.sum()
 
-    ### All the diagnostic stuff follows. ###
     def _calc_cfl(self):
+
+        """ Compute the CFL number. """
 
         # avoid destruction by fftw
         self.u = self.ifft(-self.il*self.ph)
@@ -462,9 +588,12 @@ class Model(object):
 
         return np.abs(np.hstack([self.u, self.v])).max()*self.dt/self.dx
 
-    # saving stuff
 
     def _initialize_diagnostics(self):
+
+        """ Initialize the diagnostics dictionary with each diganostic and an
+            entry.
+        """
 
         self.diagnostics = dict()
 
@@ -511,5 +640,5 @@ class Model(object):
         )
 
     def _calc_derived_fields(self):
-        """Should be implemented by subclass."""
+        """ Compute derived fields necessary for model diagnostics. """
         pass

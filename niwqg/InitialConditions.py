@@ -2,22 +2,27 @@ import numpy as np
 import scipy.special as special
 
 def McWilliams1984(model,k0=6,E=0.5):
-    """ Generates random vorticity field with red spectrum given in
+
+    """ Generate random vorticity field with red spectrum given in
         Mcwilliams, J.C. (1984): 'The emergence of isolated coherent vortices in
                                  turbulent flow,' Journal of Fluid Mechanics, 146,
                                  pp. 21–43. doi: 10.1017/S0022112084001750.
 
-       parameters
+       Parameters
        -----------
-        - model: model class
-        - k0: centroid of the energy spectrum
-        - E:  energy level
+        model: python class
+                The model class.
+        k0: float
+                The centroid of the energy spectrum.
+        E:  float
+                The energy (the strengh of the random field).
 
-       return
-       -----------
-        - q: vorticity (physical space)
+       Return
+       ------
+        q: array of floats
+                Potential vorticity (physical space).
 
-                                                                             """
+    """
 
     ckappa = np.zeros_like(model.wv2)
     nhx,nhy = model.wv2.shape
@@ -38,15 +43,19 @@ def McWilliams1984(model,k0=6,E=0.5):
 def Danioux2015(model,k0=6,E=0.5):
     """ Generates single wavenumber random vorticity field
 
-       parameters
+       Parameters
        -----------
-        - model: model class
-        - k0: wavenumber
-        - E:  energy level
+        model: python class
+                The model class.
+        k0: float
+                The single wavenumber of the vorticity field.
+        E:  float
+                The energy (the strengh of the random field).
 
-       return
+       Return
        -----------
-        - q: vorticity (physical space)
+       q: float
+            Vorticity (physical space).
 
                                                                              """
     ckappa = np.zeros_like(model.wv2)
@@ -66,17 +75,20 @@ def Danioux2015(model,k0=6,E=0.5):
     return model.ifft(qih).real
 
 def LambDipole(model, U=.01,R = 1.):
-    """ Generates Lamb's dipole vorticity field.
 
-       parameters
+    """ Generate Lamb's dipole vorticity field.
+
+       Parameters
        -----------
-        - U: translation speed (dipole's strength)
-        - R: radius
+        U: float
+                Translation speed (dipole's strength).
+        R: float
+                Diple's radius.
 
-       return
-       -----------
-        - q: vorticity (physical space)
-
+       Return
+       -------
+        q: array of floats
+              Vorticity (physical space).
 
     """
 
@@ -103,17 +115,22 @@ def LambDipole(model, U=.01,R = 1.):
 
 
 def WavePacket(model, k=10, l=0, R = 1,x0=0.,y0=0.):
-    """ Generates wave packet.
 
-       parameters
+    """ Generates Gaussian wave-packet initial condition.
+
+       Parameters
        -----------
-        - k,l : wavenumber vector
-        - R: radius
+       model: python class
+                    The model class
+       k,l : int
+                    Wavenumber vector
+       R: float
+                    Decay scale of the Gaussian packet.
 
-       return
-       -----------
-        - phi: complexified NIWs velocity (physical space)
-
+       Return
+       -------
+       phi: array of complex floats
+                    near-inertial velocity (physical space)
 
     """
 
@@ -128,21 +145,25 @@ def WavePacket(model, k=10, l=0, R = 1,x0=0.,y0=0.):
     return phi
 
 def PlaneWave(model, k=10,l=0,phase=0.):
-    """ Generates plane wave.
 
-       parameters
+    """ Generate plane-wave initial condition.
+
+       Parameters
        -----------
-        - k,l : wavenumber vector
-        - phase: phase
+       model: python class
+                    The model class
+        k,l : float
+                    Wavenumber vector
+        phase: float
+                    Phase [0, 2pi)
 
-       return
-       -----------
-        - phi: complexified NIWs velocity (physical space)
-
+       Return
+       -------
+        phi: array of complex floats
+                    near-inertial velocity (physical space)
 
     """
 
     phi = np.exp(1j*(k*x+l*y)+phase)
 
     return phi
-

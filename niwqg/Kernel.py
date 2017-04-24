@@ -8,54 +8,103 @@ from .Saving import *
 
 class Kernel(object):
 
-    """" QG-NIW model """
+    """ Python class that the kernel of single-vertical wavenumber near-inertial
+        wave models–––different wave models are defined as subclasses that define
+        the barotropic quasigeostrophic potential vorticity inversion. The model is
+        pseudospectral model in a doubly periodic domain. Physical parameters observe
+        SI units.
+
+    Parameters
+    -----------
+        nx: integer (optional)
+                Number of grid points in the x-direction.
+                The number of modes is nx/2+1.
+        ny: integer (optional)
+                Number of grid points in the y-direction.
+                If None, then ny=nx.
+        L:  float (optional)
+                Domain size.
+        dt: float (optional)
+                Time step for time integration.
+        twrite: integer (optional)
+                Print model status to screen every twrite time steps.
+        tmax: float (optional)
+                Total time of simulation.
+        U: float (optional)
+                Uniform zonal flow
+        f:  float (optional)
+                Coriolis frequency
+        N:  float (optional)
+                Buoyancy frequency
+        m:  float (optional)
+                Vertical wavenumber of near-inertial waves
+        use_filter: bool (optional)
+                If True, then uses exponential spectral filter.
+        nu4: float (optional)
+                Fouth-order hyperdiffusivity of potential vorticity.
+        nu: float (optional)
+                Diffusivity of potential vorticity.
+        mu: float (optional)
+                Linear drag of potential vorticity.
+        nu4w: float (optional)
+                Fouth-order hyperviscosity for near-inertial waves.
+        nuw: float (optional)
+                Viscosity for for near-inertial waves.
+        muw: float (optional)
+                Linear drag for for near-inertial waves.
+        dealias: bool (optional)
+                If True, then dealias solution using 2/3 rule.
+        save_to_disk: bool (optional)
+                If True, then save parameters and snapshots to disk.
+        overwrite: bool (optional)
+                If True, then overwrite extant files.
+        tsave_snapshots: integer (optional)
+                Save snapshots every tsave_snapshots time steps.
+        tdiags: integer (optional)
+                Calculate diagnostics every tdiags time steps.
+        path: string (optional)
+                Location for saving output files.
+    """
+
 
     def __init__(
         self,
-        # grid size parameters
-        nx=128,                     # grid resolution
+        nx=128,
         ny=None,
-        L=5e5,                     # domain size is L [m]
-        # timestepping parameters
-        dt=10000.,                   # numerical timestep
-        twrite=1000.,               # interval for cfl and ke writeout (in timesteps)
-        tmax=250000.,           # total time of integration
+        L=5e5,
+        dt=10000.,
+        twrite=1000.,
+        tmax=250000.,
         use_filter = True,
-        cflmax = 0.8,               # largest CFL allowed
-        # constants
-        U = .0,                     # uniform zonal flow
-        f = 1.e-4,                     # coriolis parameter (not necessary for two-layer model
-        N = 0.01,                     # buoyancy frequency
-        m = 0.025,                     # vertical wavenumber
-        g= 9.81,                    # acceleration due to gravity
-        nu4=0,                   # hyperviscosity
-        nu4w=0,                  # hyperviscosity waves
-        nu=20,                   #  viscosity
-        nuw=50.,                  #  viscosity waves
-        mu=0,                   #  viscosity
-        muw=0,                  #  viscosity waves
+        cflmax = 0.8,
+        U = .0,
+        f = 1.e-4,
+        N = 0.01,
+        m = 0.025,
+        g= 9.81,
+        nu4=0,
+        nu4w=0,
+        nu=20,
+        nuw=50.,
+        mu=0,
+        muw=0,
         dealias = False,
         save_to_disk=False,
         overwrite=True,
-        tsave_snapshots=10,         # interval fro saving snapshots (in timesteps)
-        tdiags=10,                  # interval for diagnostics (in timesteps)
+        tsave_snapshots=10,
+        tdiags=10,
         path = 'output/'):
 
-        # put all the parameters into the object
-        # grid
         self.nx = nx
         self.ny = nx
         self.L = L
         self.W = L
 
-        # time
         self.dt = dt
         self.twrite = twrite
         self.tmax = tmax
-        # fft
         self.dealias = dealias
 
-        # constants
         self.U = U
         self.g = g
         self.nu4 = nu4
@@ -71,10 +120,8 @@ class Kernel(object):
         self.kappa2 = self.kappa**2
         self.cflmax = cflmax
 
-        # nondimensional parameters
         self.hslash = self.f/self.kappa2
 
-        # saving stuff
         self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
@@ -82,10 +129,8 @@ class Kernel(object):
         self.tdiags = tdiags
         self.path = path
 
-        # flags
         self.use_filter = use_filter
 
-        # initializations
         self._initialize_logger()
         self.logger.info(self.model)
         self._initialize_grid()
@@ -97,10 +142,8 @@ class Kernel(object):
         initialize_save_snapshots(self,self.path)
         save_setup(self,)
 
-        # fft
         self._initialize_fft()
 
-        # diagnostics
         self._initialize_diagnostics()
 
 
@@ -112,15 +155,17 @@ class Kernel(object):
 
 
     def run_with_snapshots(self, tsnapstart=0., tsnapint=432000.):
-        """Run the model forward, yielding to user code at specified intervals.
 
-        Parameters
-        ----------
+        """ Run the model for prescribed time and yields to user code.
 
-        tsnapstart : int
-            The timestep at which to begin yielding.
-        tstapint : int
-            The interval at which to yield.
+            Parameters
+            ----------
+
+            tsnapstart : float
+                            The timestep at which to begin yielding.
+            tstapint : int (number of time steps)
+                            The interval at which to yield.
+
         """
 
         tsnapints = np.ceil(tsnapint/self.dt)
@@ -132,7 +177,14 @@ class Kernel(object):
         return
 
     def run(self):
-        """Run the model forward without stopping until the end."""
+
+        """ Run the model until the end (`tmax`).
+
+            The algorithm is:
+                1) Save snapshots (i.e., save the initial condition).
+                2) Take a tmax/dt steps forward.
+                3) Save diagnostics.
+        """
 
         # save initial conditions
         if self.save_to_disk:
@@ -148,18 +200,31 @@ class Kernel(object):
 
     def _step_forward(self):
 
+        """ Step solutions forwards. The algorithm is:
+                1) Take one time step with ETDRK4 scheme.
+                2) Incremente diagnostics.
+                3) Print status.
+                4) Save snapshots.
+        """
+
         self._step_etdrk4()
         increment_diagnostics(self,)
         self._print_status()
         save_snapshots(self,fields=['t','q','phi'])
 
     def _initialize_time(self):
-        """Set up timestep stuff"""
-        self.t=0        # actual time
-        self.tc=0       # timestep number
+
+        """ Initialize model clock and other time variables.
+        """
+
+        self.t=0        # time
+        self.tc=0       # time-step number
 
     def _initialize_grid(self):
-        """Set up spatial and spectral grids and related constants"""
+
+        """ Create spatial and spectral grids and normalization constants.
+        """
+
         self.x,self.y = np.meshgrid(
             np.arange(0.5,self.nx,1.)/self.nx*self.L,
             np.arange(0.5,self.ny,1.)/self.ny*self.W )
@@ -196,7 +261,9 @@ class Kernel(object):
         self.wv2i[iwv2] = self.wv2[iwv2]**-1
 
     def _initialize_filter(self):
-        """Set up frictional filter or dealiasing."""
+
+        """ Set up spectral filter or dealiasing."""
+
         if self.use_filter:
             cphi=0.65*pi
             wvx=np.sqrt((self.k*self.dx)**2.+(self.l*self.dy)**2.)
@@ -213,6 +280,9 @@ class Kernel(object):
             self.logger.info(' No dealiasing; no filter')
 
     def _initialize_logger(self):
+
+        """ Initialize logger.
+        """
 
         self.logger = logging.getLogger(__name__)
 
@@ -232,7 +302,16 @@ class Kernel(object):
 
 
     def _step_etdrk4(self):
-        """ march the system forward using a ETDRK4 scheme """
+
+        """ Take one step forward using an exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
+
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+        """
 
         self._calc_energy_conversion()
         k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()
@@ -317,12 +396,15 @@ class Kernel(object):
 
     def _initialize_etdrk4(self):
 
-        """ This performs pre-computations for the Expotential Time Differencing
-            Fourth Order Runge Kutta time stepper. The linear part is calculated
-            exactly.
-            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
-                Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005. """
+        """ Compute coefficients of the exponential time-dfferencing method
+            with a Runge-Kutta 4 scheme.
 
+            Rereferences
+            ------------
+            See Cox and Matthews, J. Comp. Physics., 176(2):430-455, 2002.
+            Kassam and Trefethen, IAM J. Sci. Comput., 26(4):1214-233, 2005.
+
+        """
 
         #
         # coefficients for q-equation
@@ -370,13 +452,29 @@ class Kernel(object):
 
 
     def jacobian_psi_phi(self):
-        """ Compute the Jacobian phix and phiy. """
+
+        """ Compute the advective term–––the Jacobian between psi and phi.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,phi)
+        """
+
         jach = self.fft( (self.u*self.phix + self.v*self.phiy) )
         jach[0,0] = 0
         return jach
 
     def jacobian_psi_q(self):
-        """ Compute the Jacobian between psi and q. Return in Fourier space. """
+
+        """ Compute the advective term–––the Jacobian between psi and q.
+
+        Returns
+        -------
+        complex array of floats
+            The Fourier transform of Jacobian(psi,q)
+        """
+
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         q = self.ifft(self.qh).real
         jach = self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
@@ -385,30 +483,47 @@ class Kernel(object):
         return jach
 
     def _invert(self):
-        """ From qh compute ph and compute velocity. """
-
         raise NotImplementedError(
             'needs to be implemented by Model subclass')
 
     def _calc_rel_vorticity(self):
-        """ from psi compute relative vorticity,
-            this is surpassed by _calc_rel_vorticity in CoupledModel """
+
+        """ Compute the geostrophic relative vorticity–––the Laplacian of the
+            streamfuctions.
+
+            This methods is surpassed by subclass-specific methods.
+
+        """
+
         self.q_psi = (self.q)
 
     def _calc_strain(self):
-        """ from psi compute geostrophic rate of strain """
+
+        """ Compute the geostrophic rate of strain.
+        """
         pxx,pyy = self.ifft(-self.k*self.k*self.ph).real, self.ifft(-self.l*self.l*self.ph).real
         pxy = self.ifft(-self.k*self.l*self.ph).real
         self.qg_strain =  4*(pxy**2)+(pxx-pyy)**2
 
     def _calc_OW(self):
-        """ calculate the Okubo-Weiss parameter """
+
+        """ Compute the Okubo-Weiss parameter.
+        """
+
         self._calc_rel_vorticity()
         self._calc_strain()
         return self.qg_strain**2 - self.q_psi**2
 
     def set_q(self,q):
-        """ Initialize pv """
+
+        """ Initialize the potential vorticity.
+
+        Parameters
+        ----------
+        q: an array of floats of dimension (nx,ny):
+                The potential vorticity in physical space.
+        """
+
         self.q = q
         self.qh = self.fft(self.q)
         self._invert()
@@ -418,18 +533,47 @@ class Kernel(object):
 
 
     def set_phi(self,phi):
-        """ Initialize pv """
+
+        """ Initialize the near-inertial velocity =.
+
+        Parameters
+        ----------
+        phi: an array of complex floats of dimension (nx,ny):
+                The near-inertial velocity, phi = uw + i vw, in physical space.
+        """
+
         self.phi = phi
         self.phih = self.fft(self.phi)
         self.Pw = self._calc_pe_niw()
         self.Kw = self._calc_ke_niw()
 
     def _initialize_fft(self):
+
+        """ Define the two-dimensional FFT methods.
+        """
+
         self.fft =  (lambda x : np.fft.fft2(x))
         self.ifft = (lambda x : np.fft.ifft2(x))
 
     def _print_status(self):
-        """Output some basic stats."""
+
+        """ Print out the the model status.
+                Step: integer
+                        Number of time steps completed
+                Time: float
+                        The elapsed time.
+                P: float
+                        The percentage of simulation completed.
+                Ke: float
+                        The geostrophic kinetic energy.
+                Kw: float
+                        The near-inertial kinetic energy.
+                Pw: float
+                        The near-inertial potential energy.
+                CFL: float
+                        The CFL number.
+        """
+
         self.tc += 1
         self.t += self.dt
 
@@ -444,71 +588,85 @@ class Kernel(object):
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
 
     def _calc_ke_qg(self):
+        """ Compute geostrophic kinetic energy, Ke. """
         return 0.5*self.spec_var(self.wv*self.ph)
-        #self._invert()
-        #self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
-        #return 0.5*(self.u**2+self.v**2).mean()
 
     def _calc_ke_niw(self):
+        """ Compute near-inertial kinetic energy, Kw. """
         return 0.5*(np.abs(self.phi)**2).mean()
 
     def _calc_pe_niw(self):
+        """ Compute near-inertial potential energy, Pw. """
         self.phix, self.phiy = self.ifft(self.ik*self.phih),self.ifft(self.il*self.phih)
         return 0.25*( np.abs(self.phix)**2 +  np.abs(self.phiy)**2 ).mean()/self.kappa2
 
     def _calc_conc(self):
-        """ Calculates the concentratin parameter of NIWs """
+        """ Compute the correlation, C, between near-inertial velocity variance and
+            relative vorticity.
+            A measure of wave concentration in cyclones of anticyclones.
+        """
         self.upsilon = np.abs(self.phi)**2 -  (np.abs(self.phi)**2).mean()
         return (self.upsilon*self.q_psi).mean()/self.upsilon.std()/self.q_psi.std()
 
     def _calc_skewness(self):
-        """ calculates skewness in relative vorticity """
-        #self.qpsi = self.ifft(-self.wv2*self.ph).real
+        """ Compute skewness of relative vorticity. """
         return ( (self.q_psi**3).mean() / (((self.q_psi**2).mean())**1.5) )
 
     def _calc_ens(self):
-        """ calculates potential enstrophy """
+        """ Compute geostrophic potential enstrophy, S. """
         return 0.5*(self.q**2).mean()
 
     def _calc_ep_phi(self):
-        """ calculates hyperviscous dissipation of NIW KE  """
+        """ Compute dissipation of Kw.  """
         return -self.nu4w*(np.abs(self.lapphi)**2).mean()\
                 - self.nuw*(np.abs(self.phix)**2+np.abs(self.phiy)**2).mean()\
                 -self.muw*(np.abs(self.phi)**2).mean()
 
     def _calc_ep_psi(self):
-        """ calculates hyperviscous dissipation of QG KE """
-        #return -self.nu4*self.spec_var(self.wv*self.qh)
+        """ Compute dissipation of QG KE. """
         lap2psi = self.ifft(self.wv4*self.ph).real
         lapq = self.ifft(-self.wv2*self.qh).real
         return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
                 + self.mu*(self.p*self.q).mean()
-        #qx, qy = self.ifft(self.ik*self.qh), self.ifft(self.il*self.qh)
-        #return -self.nu4*(qx**2 + qy**2).mean()
 
     def _calc_chi_q(self):
-        """"  calculates hyperviscous dissipation of QG Enstrophy """
+        """"  Compute dissipation of S. """
         return -self.nu4*self.spec_var(self.wv2*self.qh)
 
     def _calc_chi_phi(self):
-        """"  calculates hyperviscous dissipation of NIW PE """
+        """"  Compute dissipation of Pw. """
         lphix, lphiy = self.ifft(-self.ik*self.wv2*self.phih),\
                             self.ifft(-self.il*self.wv2*self.phih)
-        # check this.
         return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2\
                 -0.5*self.nuw*(np.abs(self.lapphi)**2).mean()/self.kappa2\
                 -0.5*self.muw*(np.abs(self.phix)**2 + np.abs(self.phiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
-        """ compute variance of p from Fourier coefficients ph """
+        """ Compute variance of a variable `p` from its Fourier transform `ph` """
         var_dens = np.abs(ph)**2 / self.M**2
         var_dens[0,0] = 0.
         return var_dens.sum()
 
     def _calc_cfl(self):
+        """ Compute the CFL number. """
         return np.abs(np.hstack([self.u, self.v,np.abs(self.phi)])).max()*self.dt/self.dx
 
     def _calc_energy_conversion(self):
+
+        """ Compute energy conversion terms.
+
+                gamma1: the refractive conversion between geostrophic kinetic
+                            energy and near-inertial potential energy.
+                gamma2: the advective conversion between geostrophic kinetic
+                            energy and near-inertial potential energy.
+                xi1: the refractive generation of geostrophic kinetic energy due
+                            wave dissipation.
+                xi2: the advective generation of geostrophic kinetic energy due
+                            wave dissipation.
+                pi: the conversion of kinetic energy from laterally coherent
+                    to incoherent near-inertial waves (a measure of loss of
+                    lateral coherence).
+        """
 
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         self._calc_rel_vorticity()
@@ -538,6 +696,11 @@ class Kernel(object):
         self.ike_niw = self.ke_niw-self.cke_niw
 
     def _initialize_diagnostics(self):
+
+        """ Initialize kernel and subclass-specific the diagnostics dictionary
+            with each diganostic and an entry.
+        """
+
         self.diagnostics = dict()
         self._initialize_kernel_diagnostics()
         self._initialize_class_diagnostics()
@@ -695,9 +858,11 @@ class Kernel(object):
         )
 
     def _calc_derived_fields(self):
+        """ Compute derived fields necessary for model diagnostics. """
         self._calc_kernel_derived_fields()
         self._calc_class_derived_fields()
 
     def _calc_kernel_derived_fields(self):
+        """ Compute kernel-specific derived fields necessary for model diagnostics. """
         self._calc_energy_conversion()
         self._calc_icke_niw()
