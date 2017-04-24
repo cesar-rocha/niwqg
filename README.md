@@ -10,6 +10,11 @@ This package comes with `numpy`. To install h5py, use Anaconda's package manager
 conda install h5py
 ```
 
+For a more comprehensive installation or update with conda use
+```
+make install
+```
+
 ### Installing `niwqg`
 
 If you're a git user, fork and clone your fork of the `niwqg` repository.
@@ -29,7 +34,11 @@ python setup.py develop
 ```
 
 ### Testing `niwqg`
-Go to the testing directory:
+If you have [`pytest`](https://docs.pytest.org/en/latest/), then run
+```
+make test
+```
+Alternatively, to in the test directory
 ```bash
 cd niwqg/tests
 ```
