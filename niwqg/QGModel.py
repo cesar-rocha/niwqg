@@ -80,7 +80,7 @@ class Model(object):
         mu = 0,
         beta = 0,
         passive_scalar = False,
-        nu4c = 3.5e9,
+        nu4c = 1.e9,
         nuc = 0,
         muc = 0,
         dealias = False,
@@ -404,10 +404,10 @@ class Model(object):
         #
 
         # the exponent for the linear part
-        self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)
-        self.c += -self.nu4*self.wv4 - self.nu*self.wv2 - self.mu - 1j*self.k*self.U
-        self.c += self.beta*self.ik*self.wv2i
-        ch = self.c*self.dt
+        c = np.zeros((self.nl,self.nk),self.dtype_cplx)
+        c += -self.nu4*self.wv4 - self.nu*self.wv2 - self.mu - 1j*self.k*self.U
+        c += self.beta*self.ik*self.wv2i
+        ch = c*self.dt
         self.expch = np.exp(ch)
         self.expch_h = np.exp(ch/2.)
         self.expch2 = np.exp(2.*ch)
@@ -430,10 +430,9 @@ class Model(object):
             #
 
             # the exponent for the linear part
-            self.c = np.zeros((self.nl,self.nk),self.dtype_cplx)
-            self.c += -self.nu4c*self.wv4 - self.nuc*self.wv2 - self.mu
-            self.c += self.beta*self.ik*self.wv2i
-            ch = self.c*self.dt
+            c = np.zeros((self.nl,self.nk),self.dtype_cplx)
+            c += -self.nu4c*self.wv4 - self.nuc*self.wv2 - self.muc
+            ch = c*self.dt
             self.expchc = np.exp(ch)
             self.expch_hc = np.exp(ch/2.)
             self.expch2c = np.exp(2.*ch)
@@ -563,6 +562,17 @@ class Model(object):
         return self.nu4*(self.q*lap2psi).mean() - self.nu*(self.p*lapq).mean()\
                 + self.mu*(self.p*self.q).mean()
 
+    def _calc_ep_c(self):
+        """ Compute dissipation of C2 """
+        return -self.nu4c*(self.lapc**2).mean() - self.nu*self.gradC2\
+                - self.muc*self.C2
+
+    def _calc_chi_c(self):
+        """ Compute dissipation of gradC2 """
+        lap2c = self.ifft(self.wv4*self.ch)
+        return self.nu4c*(lap2c*self.lapc).mean() - self.nu*(self.lapc**2).mean()\
+                - self.muc*self.gradC2
+
     def _calc_chi_q(self):
         """"  Calculates dissipation of geostrophic potential
               enstrophy, S. """
@@ -639,6 +649,47 @@ class Model(object):
                 function = (lambda self: self._calc_chi_q())
         )
 
+        add_diagnostic(self, 'C2',
+                description='Passive tracer variance',
+                units=r'[scalar]^2',
+                types = 'scalar',
+                function = (lambda self: self.C2)
+        )
+
+        add_diagnostic(self, 'gradC2',
+                description='Gradient of Passive tracer variance',
+                units=r'[scalar]^2 / m^2',
+                types = 'scalar',
+                function = (lambda self: self.gradC2)
+        )
+
+        add_diagnostic(self, 'Gamma_c',
+                description='Rate of generation of passive tracer gradient',
+                units=r'[scalar]^2 / (m^2 s)',
+                types = 'scalar',
+                function = (lambda self: self.Gamma_c)
+        )
+
+        add_diagnostic(self, 'ep_c',
+                description='The dissipation of tracer variance',
+                units=r'$s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_ep_c())
+        )
+
+        add_diagnostic(self, 'chi_c',
+                description='The dissipation of tracer gradient variance',
+                units=r'$s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_chi_c())
+        )
+
     def _calc_derived_fields(self):
         """ Compute derived fields necessary for model diagnostics. """
-        pass
+
+        if self.passive_scalar:
+            self.C2 =  self.spec_var(self.ch)
+            self.gradC2 =  self.spec_var(self.wv*self.ch)
+
+            self.lapc = self.ifft(-self.wv2*self.ch)
+            self.Gamma_c = (self.lapc*self.ifft(self.jacobian_psi_c())).mean()

@@ -37,7 +37,7 @@ tmax = 10*Te
 path = "128/lamb/moderate_filter"
 #path = "512/lamb/large_amp"
 m = QGModel.Model(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(0.1*Te/dt),
-                    nu4=7.5e8, use_filter=False,save_to_disk=False,
+                    nu4=7.5e8,nu4c=0.5e8, nuc = 75, use_filter=False,save_to_disk=False,
                     tsave_snapshots=5,path=path,
                     U =-U, tdiags=1, beta = 0.,passive_scalar=True)
 
@@ -64,8 +64,17 @@ KE_qg = m.diagnostics['ke_qg']['value']
 ENS_qg = m.diagnostics['ens']['value']
 ep_psi = m.diagnostics['ep_psi']['value']
 chi_q =  m.diagnostics['chi_q']['value']
+
+C2 = m.diagnostics['C2']['value']
+gradC2 = m.diagnostics['gradC2']['value']
+Gamma_c = m.diagnostics['Gamma_c']['value']
+ep_c = m.diagnostics['ep_c']['value']
+chi_c = m.diagnostics['chi_c']['value']
+
+
 dt = time[1]-time[0]
 dKE = np.gradient(KE_qg,dt)
+dgradc2 = np.gradient(gradC2,dt)
 
 plt.figure(figsize=(12,6))
 lw, alp = 3.,.5
