@@ -567,14 +567,14 @@ class Model(object):
 
     def _calc_ep_c(self):
         """ Compute dissipation of C2 """
-        return -self.nu4c*(self.lapc**2).mean() - self.nu*self.gradC2\
-                - self.muc*self.C2
+        return -2*self.nu4c*(self.lapc**2).mean() - 2*self.nu*self.gradC2\
+                - 2*self.muc*self.C2
 
     def _calc_chi_c(self):
         """ Compute dissipation of gradC2 """
         lap2c = self.ifft(self.wv4*self.ch)
-        return self.nu4c*(lap2c*self.lapc).mean() - self.nu*(self.lapc**2).mean()\
-                - self.muc*self.gradC2
+        return 2*self.nu4c*(lap2c*self.lapc).mean() - 2*self.nu*(self.lapc**2).mean()\
+                - 2*self.muc*self.gradC2
 
     def _calc_chi_q(self):
         """"  Calculates dissipation of geostrophic potential
@@ -695,4 +695,4 @@ class Model(object):
             self.gradC2 =  self.spec_var(self.wv*self.ch)
 
             self.lapc = self.ifft(-self.wv2*self.ch)
-            self.Gamma_c = (self.lapc*self.ifft(self.jacobian_psi_c())).mean()
+            self.Gamma_c = 2*(self.lapc*self.ifft(self.jacobian_psi_c())).mean()
