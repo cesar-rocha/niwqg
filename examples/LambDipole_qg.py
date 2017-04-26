@@ -39,12 +39,14 @@ path = "128/lamb/moderate_filter"
 m = QGModel.Model(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(0.1*Te/dt),
                     nu4=7.5e8, use_filter=False,save_to_disk=False,
                     tsave_snapshots=5,path=path,
-                    U =-U, tdiags=1, beta = 0.)
+                    U =-U, tdiags=1, beta = 0.,passive_scalar=True)
 
 #q = McWilliams1984(m,k0=k0,E=U0**2/2)
 q = ic.LambDipole(m, U=U,R = 2*np.pi/k0)
+c = ic.WavePacket(m, k=k0, l=0, R = L/5,x0=L/2,y0=L/2).real
 
 m.set_q(q)
+m.set_c(c)
 
 m._invert()
 
