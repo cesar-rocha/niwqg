@@ -164,6 +164,6 @@ def PlaneWave(model, k=10,l=0,phase=0.):
 
     """
 
-    phi = np.exp(1j*(k*x+l*y)+phase)
+    phi = np.exp(1j*(k*model.x+l*model.y)+phase)
 
     return phi

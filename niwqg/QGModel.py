@@ -384,6 +384,9 @@ class Model(object):
         # calcuate q
         self.q = self.ifft(self.qh).real
 
+        if self.passive_scalar:
+            self.c = self.ifft(self.ch).real
+
         k4 = self._calc_ep_psi()
         self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
 

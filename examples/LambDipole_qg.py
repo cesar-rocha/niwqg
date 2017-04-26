@@ -43,7 +43,8 @@ m = QGModel.Model(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(0.1*Te/dt),
 
 #q = McWilliams1984(m,k0=k0,E=U0**2/2)
 q = ic.LambDipole(m, U=U,R = 2*np.pi/k0)
-c = ic.WavePacket(m, k=k0, l=0, R = L/5,x0=L/2,y0=L/2).real
+#c = ic.WavePacket(m, k=k0/5, l=k0/5, R = L/5,x0=L/2,y0=L/2).real
+c = ic.PlaneWave(m,k=k0/3, -l=k0/3).real
 
 m.set_q(q)
 m.set_c(c)
@@ -88,3 +89,6 @@ plt.legend(loc=4)
 
 stop = timeit.default_timer()
 print("Time elapsed: %3.2f seconds" %(stop - start))
+
+
+plt.close('all')
