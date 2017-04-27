@@ -10,7 +10,7 @@ This package comes with `numpy`. To install h5py, use Anaconda's package manager
 conda install h5py
 ```
 
-For a more comprehensive installation or update with conda use
+For a more comprehensive installation or update with conda, run
 ```
 make install
 ```
