@@ -52,7 +52,7 @@ and verify the energy budget.
 
 # Documentation
 Some documentation is available [here](docs/Index.ipynb).  Also  check the docstrings of
-classes and methods.`
+classes and methods.
 
 # Development
 The code is under rapid development by [@crocha700](https://github.com/crocha700)
@@ -60,7 +60,7 @@ as part of the project "Stimulated Loss of Balance" (SLOB) with
 [@glwagner](https://github.com/glwagner) and [@wry55](https://github.com/wry55).
 
 Please, submit contributions via pull-request of
-a cut-off branch (not master). The pull-request must include the output of the test suite.
+a cut-off branch (not master).
 
 # Funding
 This project is funded by the [National Aeronautics and Space Administration](https://www.nasa.gov) under grant NNX16AO5OH.
