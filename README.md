@@ -1,4 +1,4 @@
-Code for a special class of solutions of the Xie & Vanneste (2015) coupled model in a doubly periodic domain –– the documentation is in the works.
+Code for a special class of solutions of the Xie & Vanneste (2015) coupled model in a doubly periodic domain.
 
 <img src="./docs/figs/organogram.png" alt="NIWQG organogram"  width="500">
 
@@ -49,6 +49,10 @@ nosetests
 
 You can also run this simple [example](./examples/LambDipole_CoupledModel.ipynb)
 and verify the energy budget.
+
+# Documentation
+Some documentations are available [here](docs/Index.ipynb). Check also the docstrings of
+classes and methods.`
 
 # Development
 The code is under rapid development by [@crocha700](https://github.com/crocha700)
