@@ -51,7 +51,7 @@ You can also run this simple [example](./examples/LambDipole_CoupledModel.ipynb)
 and verify the energy budget.
 
 # Documentation
-Some documentations are available [here](docs/Index.ipynb). Check also the docstrings of
+Some documentation is available [here](docs/Index.ipynb).  Also  check the docstrings of
 classes and methods.`
 
 # Development
