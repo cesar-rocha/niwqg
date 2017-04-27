@@ -667,7 +667,7 @@ class Model(object):
         )
 
         add_diagnostic(self, 'Gamma_c',
-                description='Rate of generation of passive tracer gradient',
+                description='Rate of generation of passive tracer gradient variance',
                 units=r'[scalar]^2 / (m^2 s)',
                 types = 'scalar',
                 function = (lambda self: self.Gamma_c)
@@ -696,3 +696,8 @@ class Model(object):
 
             self.lapc = self.ifft(-self.wv2*self.ch)
             self.Gamma_c = 2*(self.lapc*self.ifft(self.jacobian_psi_c())).mean()
+
+        else:
+            self.C2, self.gradC2 = 0., 0.
+            self.c, self.ch = 0., 0.
+            self.lapc, self.Gamma_c = np.array([0.]), 0.
