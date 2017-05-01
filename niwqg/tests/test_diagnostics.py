@@ -39,12 +39,14 @@ class QGTester(unittest.TestCase):
     """ A class for diagnostics of the QG model """
     def setUp(self):
         U0 = 0.05
-        self.m =  QGModel.Model(use_filter=False, U=-U0, tdiags=1)
+        self.m =  QGModel.Model(use_filter=False, U=-U0, tdiags=1, passive_scalar=True)
 
         k0 = 10*(2*np.pi/self.m.L)
         q = ic.LambDipole(self.m, U=U0,R = 2*np.pi/k0)
+        c = ic.PlaneWave(self.m,k=k0,l=k0)*q.mean()
 
         self.m.set_q(q)
+        self.m.set_c(c)
 
         self.m.run()
 
@@ -55,6 +57,12 @@ class QGTester(unittest.TestCase):
         Ke = self.m.diagnostics['Ke']['value']
 
         self.assertTrue(np.allclose(KE_qg,Ke,rtol=rtol), "KE QG diagnostic is incorrect")
+
+    def test_tracer_variance(self, rtol=1e-14):
+        """ Diagnosed passive-scalar variance must be the same cvar from variance equation """
+        C2 = self.m.diagnostics['C2']['value']
+        cvar = self.m.diagnostics['cvar']['value']
+        self.assertTrue(np.allclose(C2,cvar,rtol=rtol), "Passive-scalar variance diagnostic is incorrect")
 
 if __name__ == "__main__":
     unittest.main()
