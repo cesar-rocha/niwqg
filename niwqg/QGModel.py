@@ -71,8 +71,6 @@ class Model(object):
         twrite=1000,
         tswrite=10,
         tmax=250000.,
-        tavestart=315360000.,
-        taveint=86400.,
         use_filter = True,
         U = .0,
         nu4=5.e9,
@@ -99,8 +97,6 @@ class Model(object):
         self.twrite = twrite
         self.tswrite = tswrite
         self.tmax = tmax
-        self.tavestart = tavestart
-        self.taveint = taveint
         self.tdiags = tdiags
         self.passive_scalar = passive_scalar
         self.dealias = dealias
@@ -223,7 +219,6 @@ class Model(object):
 
         self.t=0        # time
         self.tc=0       # time-step number
-        self.taveints = np.ceil(self.taveint/self.dt)
 
     ### initialization routines, only called once at the beginning ###
     def _initialize_grid(self):
@@ -315,8 +310,7 @@ class Model(object):
         if not self.logger.handlers:
             self.logger.addHandler(fhandler)
 
-        self.log_level = 1
-        self.logger.setLevel(self.log_level*10)
+        self.logger.setLevel(10)
 
         # this prevents the logger from propagating into the ipython notebook log
         self.logger.propagate = False
@@ -557,7 +551,7 @@ class Model(object):
         self.tc += 1
         self.t += self.dt
 
-        if (self.log_level) and ((self.tc % self.twrite)==0):
+        if (self.tc % self.twrite)==0:
             self.ke = self._calc_ke_qg()
             self.cfl = self._calc_cfl()
             self.logger.info('Step: %i, Time: %4.3e, P: %4.3e , Ke: %4.3e, CFL: %4.3f'
