@@ -294,8 +294,7 @@ class Kernel(object):
         if not self.logger.handlers:
             self.logger.addHandler(fhandler)
 
-        self.log_level = 1
-        self.logger.setLevel(self.log_level*10)
+        self.logger.setLevel(10)
 
         self.logger.propagate = False
         self.logger.info(' Logger initialized')
@@ -577,7 +576,7 @@ class Kernel(object):
         self.tc += 1
         self.t += self.dt
 
-        if (self.log_level) and ((self.tc % self.twrite)==0):
+        if  (self.tc % self.twrite)==0:
             self.ke = self._calc_ke_qg()
             self.kew = self._calc_ke_niw()
             self.pew = self._calc_pe_niw()
