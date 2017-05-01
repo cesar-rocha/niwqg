@@ -80,7 +80,7 @@ class Model(object):
         mu = 0,
         beta = 0,
         passive_scalar = False,
-        nu4c = 1.e9,
+        nu4c = 5.e9,
         nuc = 0,
         muc = 0,
         dealias = False,
@@ -346,6 +346,9 @@ class Model(object):
             self.ch = (self.expch_hc*self.ch0 + Fn0c*self.Qhc)*self.filtr
             self.ch1 = self.ch.copy()
 
+            self._calc_derived_fields()
+            c1 = self._calc_ep_c()
+
         self._invert()
         k1 = self._calc_ep_psi()
 
@@ -356,6 +359,9 @@ class Model(object):
             Fnac = -self.jacobian_psi_c()
             self.ch = (self.expch_hc*self.ch0 + Fnac*self.Qhc)*self.filtr
 
+            self._calc_derived_fields()
+            c2 = self._calc_ep_c()
+
         self._invert()
         k2 = self._calc_ep_psi()
 
@@ -365,6 +371,9 @@ class Model(object):
         if self.passive_scalar:
             Fnbc = -self.jacobian_psi_c()
             self.ch = (self.expch_hc*self.ch1 + ( 2.*Fnbc - Fn0c )*self.Qhc)*self.filtr
+
+            self._calc_derived_fields()
+            c3 = self._calc_ep_c()
 
         self._invert()
         k3 = self._calc_ep_psi()
@@ -377,6 +386,11 @@ class Model(object):
             Fncc = -self.jacobian_psi_c()
             self.ch = (self.expchc*self.ch0 + Fn0c*self.f0c+  2.*(Fnac+Fnbc)*self.fabc\
                   + Fncc*self.fcc)*self.filtr
+
+            self._calc_derived_fields()
+            c4 = self._calc_ep_c()
+            self.cvar += self.dt*(c1 + 2*(c2+c3) + c4)/6.
+
 
         # invert
         self._invert()
@@ -515,6 +529,7 @@ class Model(object):
 
         self.c = c
         self.ch = self.fft(self.c)
+        self.cvar = self.spec_var(self.ch)
 
     def _initialize_fft(self):
 
@@ -659,6 +674,13 @@ class Model(object):
                 function = (lambda self: self.C2)
         )
 
+        add_diagnostic(self, 'cvar',
+                description='Passive tracer variance, from variance equation',
+                units=r'[scalar]^2',
+                types = 'scalar',
+                function = (lambda self: self.cvar)
+        )
+
         add_diagnostic(self, 'gradC2',
                 description='Gradient of Passive tracer variance',
                 units=r'[scalar]^2 / m^2',
@@ -698,6 +720,6 @@ class Model(object):
             self.Gamma_c = 2*(self.lapc*self.ifft(self.jacobian_psi_c())).mean()
 
         else:
-            self.C2, self.gradC2 = 0., 0.
+            self.C2, self.gradC2, self.cvar = 0., 0., 0.
             self.c, self.ch = 0., 0.
             self.lapc, self.Gamma_c = np.array([0.]), 0.
