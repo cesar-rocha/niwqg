@@ -140,7 +140,7 @@ def WavePacket(model, k=10, l=0, R = 1,x0=0.,y0=0.):
     r = np.sqrt( (x-x0)**2 + (y-y0)**2 )
 
     phi = np.exp(1j*(k*(x-x0)+l*(y-y0)))
-    phi[r>R] = 0.+0j
+    phi *= np.exp(-((r/R)**2))
 
     return phi
 
