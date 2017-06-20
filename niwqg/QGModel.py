@@ -86,7 +86,9 @@ class Model(object):
         overwrite=True,
         tsave_snapshots=10,
         tdiags = 10,
-        path = 'output/'):
+        path = 'output/',
+        use_mkl=True,
+        nthreads=1):
 
         self.nx = nx
         self.ny = nx
@@ -116,6 +118,9 @@ class Model(object):
         self.path = path
 
         self.use_filter = use_filter
+
+        self.use_mkl = use_mkl
+        self.nthreads = nthreads
 
         self._initialize_logger()
         self._initialize_grid()
@@ -529,7 +534,17 @@ class Model(object):
 
         """ Define the two-dimensional FFT methods.
         """
-
+        
+        # need to fix bug in mkl_fft.irfft2
+        if self.use_mkl:
+            #import mkl
+            #mkl.set_num_threads(self.nthreads)
+            #import mkl_fft
+            #self.fft =  (lambda x : mkl_fft.rfft2(x))
+            #self.ifft = (lambda x : mkl_fft.irfft2(x))
+            pass
+        else:
+            pass
         self.fft =  (lambda x : np.fft.rfft2(x))
         self.ifft = (lambda x : np.fft.irfft2(x))
 

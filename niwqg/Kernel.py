@@ -93,7 +93,9 @@ class Kernel(object):
         overwrite=True,
         tsave_snapshots=10,
         tdiags=10,
-        path = 'output/'):
+        path = 'output/',
+        use_mkl=True,
+        nthreads=1):
 
         self.nx = nx
         self.ny = nx
@@ -131,6 +133,9 @@ class Kernel(object):
 
         self.use_filter = use_filter
 
+        self.use_mkl = use_mkl
+        self.nthreads = nthreads
+
         self._initialize_logger()
         self.logger.info(self.model)
         self._initialize_grid()
@@ -145,7 +150,6 @@ class Kernel(object):
         self._initialize_fft()
 
         self._initialize_diagnostics()
-
 
     def _allocate_variables(self):
         """ Allocate variables in memory """
@@ -551,8 +555,15 @@ class Kernel(object):
         """ Define the two-dimensional FFT methods.
         """
 
-        self.fft =  (lambda x : np.fft.fft2(x))
-        self.ifft = (lambda x : np.fft.ifft2(x))
+        if self.use_mkl:
+            import mkl
+            mkl.set_num_threads(self.nthreads)
+            import mkl_fft
+            self.fft =  (lambda x : mkl_fft.fft2(x))
+            self.ifft = (lambda x : mkl_fft.ifft2(x))
+        else:
+            self.fft =  (lambda x : np.fft.fft2(x))
+            self.ifft = (lambda x : np.fft.ifft2(x))
 
     def _print_status(self):
 
