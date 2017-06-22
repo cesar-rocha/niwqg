@@ -193,7 +193,7 @@ class Model(object):
 
         # save initial conditions
         if self.save_to_disk:
-            save_snapshots(self,fields=['t','q','p'])
+            save_snapshots(self,fields=['t','q','c'])
 
         # run the model
         while(self.t < self.tmax):
@@ -215,7 +215,7 @@ class Model(object):
         self._step_etdrk4()
         increment_diagnostics(self,)
         self._print_status()
-        save_snapshots(self,fields=['t','q','p'])
+        save_snapshots(self,fields=['t','q','c'])
 
     def _initialize_time(self):
 
