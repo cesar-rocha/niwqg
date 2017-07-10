@@ -193,7 +193,10 @@ class Model(object):
 
         # save initial conditions
         if self.save_to_disk:
-            save_snapshots(self,fields=['t','q','c'])
+            if self.passive_scalar:
+                save_snapshots(self,fields=['t','q','c'])
+            else:
+                save_snapshots(self,fields=['t','q'])
 
         # run the model
         while(self.t < self.tmax):
