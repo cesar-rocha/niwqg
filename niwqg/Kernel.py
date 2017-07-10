@@ -94,7 +94,7 @@ class Kernel(object):
         tsave_snapshots=10,
         tdiags=10,
         path = 'output/',
-        use_mkl=True,
+        use_mkl=False,
         nthreads=1):
 
         self.nx = nx
