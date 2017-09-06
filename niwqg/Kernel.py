@@ -88,6 +88,9 @@ class Kernel(object):
         nuw=50.,
         mu=0,
         muw=0,
+        epsilon_q = 1e-5,
+        wavenumber_forcing = 25,
+        width_forcing = 2,
         dealias = False,
         save_to_disk=False,
         overwrite=True,
@@ -120,6 +123,10 @@ class Kernel(object):
         self.kappa2 = self.kappa**2
         self.cflmax = cflmax
 
+        self.epsilon_q =  epsilon_q
+        self.wavenumber_forcing = wavenumber_forcing
+        self.width_forcing = width_forcing
+
         self.hslash = self.f/self.kappa2
 
         self.save_to_disk = save_to_disk
@@ -138,6 +145,7 @@ class Kernel(object):
         self._initialize_filter()
         self._initialize_etdrk4()
         self._initialize_time()
+        self._initialize_forcing()
 
         initialize_save_snapshots(self,self.path)
         save_setup(self,)
@@ -300,6 +308,33 @@ class Kernel(object):
         self.logger.info(' Logger initialized')
 
 
+    def _initialize_forcing(self):
+
+        """ Sets up the spectrum of the stochastic forcing """
+
+        # See appendix A of Navid Constantinou's dissertation
+        # amplitude_forcing = sqrt(energy input)
+
+        # the spectrum of the forcing (this is Navid's Qkl);
+        self.spectrum_forcing = np.exp(-((self.wv-self.wavenumber_forcing)**2) / (2*(self.width_forcing**2)) )
+
+        # Normalize such that the equivalent kinetic energy spectrum integrates to one
+        norm = self.spec_var( np.sqrt(self.spectrum_forcing*self.wv2i/2) )
+        self.spectrum_forcing *= 1./norm
+
+    def _update_qg_forcing(self):
+
+        """ Updates the forcing (delta-correlated in time) """
+
+        phase = np.random.rand(self.nl,self.nk)*2*np.pi
+        return np.sqrt(self.epsilon_q*self.spectrum_forcing)*np.exp(1j*phase)
+
+    def _update_niw_forcing(self):
+        """ Updates the forcing (delta-correlated in time) """
+        #phase = np.random.rand(self.nl,self.nk)*2*np.pi
+        #return self.amplitude_forcing*np.sqrt(self.spectrum_forcing)*np.exp(1j*phase)/np.sqrt(self.dt)
+        pass
+
     def _step_etdrk4(self):
 
         """ Take one step forward using an exponential time-dfferencing method
@@ -374,8 +409,12 @@ class Kernel(object):
         a4 = self._calc_ep_phi()
 
         Fnc = -self.jacobian_psi_q()
+
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
+
+        self.forceh = self._update_qg_forcing()
+        self.qh += np.sqrt(self.dt)*self.forceh
 
         # phi-equation
         Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
@@ -479,7 +518,7 @@ class Kernel(object):
         jach = self.ik*self.fft(self.u*q) + self.il*self.fft(self.v*q)
         jach[0,0] = 0
         #jach[0],jach[:,0] = 0, 0
-        return jach
+        return jach*0
 
     def _invert(self):
         raise NotImplementedError(
@@ -750,6 +789,12 @@ class Kernel(object):
                 function = (lambda self: 0.5*(self.q**2).mean())
         )
 
+        add_diagnostic(self,'energy_input',
+                description='Energy input by random forcing',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: -(self.p*self.ifft(self.forceh).real).mean()/np.sqrt(self.dt))
+        )
 
         add_diagnostic(self, 'ke_niw',
                 description='Near-inertial Kinetic Energy',

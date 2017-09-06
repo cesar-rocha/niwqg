@@ -78,6 +78,10 @@ class Model(object):
         mu = 0,
         beta = 0,
         passive_scalar = False,
+        forcing = False,
+        epsilon_q = 1e-5,
+        wavenumber_forcing = 25,
+        width_forcing = 2,
         nu4c = 5.e9,
         nuc = 0,
         muc = 0,
@@ -110,6 +114,11 @@ class Model(object):
         self.nuc = nuc
         self.muc = muc
 
+        self.forcing = forcing
+        self.epsilon_q =  epsilon_q
+        self.wavenumber_forcing = wavenumber_forcing
+        self.width_forcing = width_forcing
+
         self.save_to_disk = save_to_disk
         self.overwrite = overwrite
         self.tsnaps = tsave_snapshots
@@ -123,6 +132,7 @@ class Model(object):
         self._initialize_filter()
         self._initialize_etdrk4()
         self._initialize_time()
+        self._initialize_forcing()
 
         initialize_save_snapshots(self, self.path)
         save_setup(self, )
@@ -269,8 +279,25 @@ class Model(object):
             'needs to be implemented by Model subclass')
 
     def _initialize_forcing(self):
-        raise NotImplementedError(
-            'needs to be implemented by Model subclass')
+
+        """ Sets up the spectrum of the stochastic forcing """
+
+        # See appendix A of Navid Constantinou's dissertation
+        # amplitude_forcing = sqrt(energy input)
+
+        # the spectrum of the forcing (this is Navid's Qkl);
+        self.spectrum_forcing = np.exp(-((self.wv-self.wavenumber_forcing)**2) / (2*(self.width_forcing**2)) )
+
+        # Normalize such that the equivalent kinetic energy spectrum integrates to one
+        norm = self.spec_var( np.sqrt(self.spectrum_forcing*self.wv2i/2) )
+        self.spectrum_forcing *= 1./norm
+
+    def _update_qg_forcing(self):
+
+        """ Updates the forcing (delta-correlated in time) """
+
+        phase = np.random.rand(self.nl,self.nk)*2*np.pi
+        return np.sqrt(self.epsilon_q*self.spectrum_forcing)*np.exp(1j*phase)
 
     def _initialize_filter(self):
 
@@ -290,10 +317,6 @@ class Model(object):
         else:
             self.filtr = np.ones_like(self.wv2)
             self.logger.info(' No dealiasing; no filter')
-
-
-    def _do_external_forcing(self):
-        pass
 
     def _initialize_logger(self):
 
@@ -319,7 +342,7 @@ class Model(object):
 
     def _step_etdrk4(self):
 
-        """ Take one step forward using an exponential time-dfferencing method
+        """ Take one step forward using an exponential time-differencing method
             with a Runge-Kutta 4 scheme.
 
             Rereferences
@@ -373,8 +396,10 @@ class Model(object):
         k3 = self._calc_ep_psi()
 
         Fnc = -self.jacobian_psi_q()
+        self.forceh = self._update_qg_forcing()
+
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
-                  + Fnc*self.fc)*self.filtr
+                  + Fnc*self.fc + np.sqrt(self.dt)*self.forceh)*self.filtr
 
         if self.passive_scalar:
             Fncc = -self.jacobian_psi_c()
@@ -645,6 +670,13 @@ class Model(object):
                 units=r's^{-2}',
                 types = 'scalar',
                 function = (lambda self: 0.5*(self.q**2).mean())
+        )
+
+        add_diagnostic(self,'energy_input',
+                description='Energy input by random forcing',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: -(self.p*self.ifft(self.forceh)).mean()/np.sqrt(self.dt))
         )
 
         add_diagnostic(self, 'ep_psi',
