@@ -297,7 +297,8 @@ class Model(object):
         """ Updates the forcing (delta-correlated in time) """
 
         phase = np.random.rand(self.nl,self.nk)*2*np.pi
-        return np.sqrt(self.epsilon_q*self.spectrum_forcing)*np.exp(1j*phase)
+        fh = np.sqrt(self.epsilon_q*self.spectrum_forcing)*np.exp(1j*phase)
+        return (fh + np.conj(fh))/np.sqrt(2)
 
     def _initialize_filter(self):
 
@@ -399,7 +400,10 @@ class Model(object):
         self.forceh = self._update_qg_forcing()
 
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
-                  + Fnc*self.fc + np.sqrt(self.dt)*self.forceh)*self.filtr
+                  + Fnc*self.fc)*self.filtr
+
+        self.forceh = self._update_qg_forcing()
+        self.qh += np.sqrt(self.dt)*self.forceh
 
         if self.passive_scalar:
             Fncc = -self.jacobian_psi_c()
@@ -409,7 +413,6 @@ class Model(object):
             self._calc_derived_fields()
             c4 = self._calc_ep_c()
             self.cvar += self.dt*(c1 + 2*(c2+c3) + c4)/6.
-
 
         # invert
         self._invert()

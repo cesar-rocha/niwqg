@@ -9,6 +9,7 @@ plt.rcParams['contour.negative_linestyle'] = 'dashed'
 import numpy as np
 
 from niwqg import CoupledModel
+from niwqg import UnCoupledModel
 from niwqg import InitialConditions as ic
 import cmocean
 
@@ -29,23 +30,25 @@ L0 = 2*np.pi/k0
 epsilon = .00001
 
 # dissipation
-mu = 0.1
+mu = 0.0025
+mu = 0.05
+nu = 0.05
 Tmu = 1./mu
 dt = .25
-tmax = 15*Tmu
+tmax = 30*Tmu
 
-kf = 12
+kf = 7
 dkf = 1
 
 
 path = "128/FD_QGNIW"
 #path = "512/lamb/large_amp"
-m = CoupledModel.Model(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(20*dt),
-                    nu4=0,mu=mu,nu4w=0,nu=0,nuw=0, use_filter=True,save_to_disk=True,
+m = UnCoupledModel.Model(L=L,nx=nx, tmax = tmax,dt = dt, twrite=int(20*dt),
+                    nu4=0,mu=mu,nu4w=0,nu=0,nuw=0,muw=nu, use_filter=True,save_to_disk=True,
                     tsave_snapshots=25,path=path,
                     U = 0., tdiags=1,
                     wavenumber_forcing=kf,width_forcing=dkf,
-                    epsilon_q=epsilon )
+                    epsilon_q=epsilon, epsilon_w=epsilon )
 
 m.set_q(np.zeros([m.nx]*2))
 m.set_phi(np.zeros([m.nx]*2)+0j)
@@ -55,29 +58,42 @@ m._invert()
 # run the model
 m.run()
 
-
 # diagnostics
 time = m.diagnostics['time']['value']
 KE_qg = m.diagnostics['ke_qg']['value']
+KE_niw = m.diagnostics['ke_niw']['value']
+PE_niw = m.diagnostics['pe_niw']['value']
+
 ENS_qg = m.diagnostics['ens']['value']
 ep_psi = m.diagnostics['ep_psi']['value']
 chi_q =  m.diagnostics['chi_q']['value']
 
 energy_input = m.diagnostics['energy_input']['value']
+wave_energy_input = m.diagnostics['wave_energy_input']['value']
+ep_phi = m.diagnostics['ep_phi']['value']
 
 dt = time[1]-time[0]
 dKE = np.gradient(KE_qg,dt)
+dKEw = np.gradient(KE_niw,dt)
 
-plt.figure(figsize=(12,6))
+fig = plt.figure(figsize=(12,6))
 lw, alp = 3.,.5
+
+ax1 = fig.add_subplot(121)
 plt.plot(time*mu,np.ones(time.size)*epsilon/mu/2,'r--',linewidth=1.25)
 plt.plot(time*mu,epsilon/(2*mu)*(1-np.exp(-2*mu*time)),'k--',linewidth=1.25)
 plt.plot(time*mu,KE_qg,
             linewidth=lw,alpha=alp)
 #plt.plot(time/Te,Te*np.ones(time.size)*epsilon/KE_qg[0],'r--')
+
+ax1 = fig.add_subplot(122)
+plt.plot(time*mu,np.ones(time.size)*epsilon/nu/2,'r--',linewidth=1.25)
+plt.plot(time*mu,KE_niw,
+            linewidth=lw,alpha=alp)
+
 plt.xlabel(r"Time [$t \times \mu$]")
 plt.ylabel(r'Energy [$K$]')
-plt.savefig('/home/crocha/Desktop/energy')
+#plt.savefig('/home/crocha/Desktop/energy')
 
 plt.figure(figsize=(12,6))
 plt.plot(time*mu,epsilon*np.ones_like(time),'r--',linewidth=1.25,label=r'$\epsilon$')
@@ -89,18 +105,22 @@ plt.legend()
 plt.xlabel(r"Time [$t \times \mu$]")
 plt.ylabel(r'Power')
 
-plt.savefig('/home/crocha/Desktop/budget')
+#plt.savefig('/home/crocha/Desktop/budget')
 
 plt.figure()
 plt.plot(time*mu,energy_input,label=r'$-\langle \psi$ force$\rangle$')
 plt.plot(time*mu,epsilon*np.ones_like(time),'r--',linewidth=1.25,label=r'$\epsilon$')
 plt.plot(time*mu,2*mu*KE_qg,label=r'$2\mu K$')
 
+plt.figure()
+plt.plot(time*mu,wave_energy_input+ep_phi,label=r'$-\langle \psi$ force$\rangle$')
+plt.plot(time*mu,2*mu*dKE,label=r'$2\mu K$')
+
+
 
 # calculate spectrum
 E = 0.5 * np.abs(m.wv*m.ph)**2
 ki, Er = spectrum.calc_ispec(m.kk, m.ll, E, ndim=2)
-
 
 # plt.figure(figsize=(12,6))
 # plt.plot(time/Te,Te*ep_psi/KE_qg[0], label=r'Dissipation $-\epsilon_\psi$',

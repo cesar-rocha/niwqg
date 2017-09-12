@@ -81,17 +81,19 @@ class Model(Kernel.Kernel):
                 3) Calculate geostrophic stremfunction, p = pv+pw.
         """
 
-        # the wavy PV
+        # the wave PV
         self.phi2 = np.abs(self.phi)**2
         self.gphi2h = -self.wv2*self.fft(self.phi2)
         self.qwh = 0.5*(0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f
         self.qwh *= self.filtr
 
         # invert for psi
-        self.pw = self.ifft((self.wv2i*self.qwh)).real
-        self.pv = self.ifft(-(self.wv2i*self.qh)).real
-        self.p = self.pv+self.pw
-        self.ph = self.fft(self.p)
+        self.pwh = self.wv2i*self.qwh
+        self.pvh = -self.wv2i*self.qh
+        self.ph = self.pvh+self.pwh
+        self.p = self.ifft(self.ph).real
+        self.pv = self.ifft(self.pvh).real
+        self.pw = self.ifft(self.pwh).real
 
         # calcuate q
         self.q = self.ifft(self.qh).real

@@ -29,10 +29,10 @@ L0 = 2*np.pi/k0
 epsilon = .00001
 
 # dissipation
-mu = 0.1
+mu = 0.005
 Tmu = 1./mu
 dt = .1
-tmax = 25*Tmu
+tmax = 15*Tmu
 
 kf = 7
 dkf = 1
@@ -73,7 +73,6 @@ plt.plot(time*mu,KE_qg,
 #plt.plot(time/Te,Te*np.ones(time.size)*epsilon/KE_qg[0],'r--')
 plt.xlabel(r"Time [$t \times \mu$]")
 plt.ylabel(r'Energy [$K$]')
-plt.savefig('/home/crocha/Desktop/energy')
 
 plt.figure(figsize=(12,6))
 plt.plot(time*mu,epsilon*np.ones_like(time),'r--',linewidth=1.25,label=r'$\epsilon$')
@@ -85,7 +84,6 @@ plt.legend()
 plt.xlabel(r"Time [$t \times \mu$]")
 plt.ylabel(r'Power')
 
-plt.savefig('/home/crocha/Desktop/budget')
 
 plt.figure()
 plt.plot(time*mu,energy_input,label=r'$-\langle \psi$ force$\rangle$')

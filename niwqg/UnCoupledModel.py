@@ -57,8 +57,8 @@ class Model(Kernel.Kernel):
         """
 
         # invert for psi
-        self.p = self.ifft(-(self.wv2i*self.qh)).real
-        self.ph = self.fft(self.p)
+        self.ph = -(self.wv2i*self.qh)
+        self.p = self.ifft(self.ph).real
 
         # calcuate q
         self.q = self.ifft(self.qh).real
