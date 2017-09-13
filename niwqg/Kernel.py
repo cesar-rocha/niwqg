@@ -99,7 +99,7 @@ class Kernel(object):
         tdiags=10,
         path = 'output/',
         use_mkl=False,
-        nthreads=1):
+        nthreads=4):
 
         self.nx = nx
         self.ny = nx
