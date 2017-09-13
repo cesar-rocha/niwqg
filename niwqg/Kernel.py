@@ -346,6 +346,7 @@ class Kernel(object):
         #phase = np.random.rand(self.nl,self.nk)*2*np.pi
         #fh = np.sqrt(self.epsilon_w*self.spectrum_wave_forcing)*np.exp(1j*phase)
         xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())
+        #xi = np.ones_like(self.q)*(1. +1j) # force by a contant
         self.forcew = np.sqrt(self.epsilon_w)*xi
         return self.fft(self.forcew)
 
