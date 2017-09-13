@@ -79,7 +79,7 @@ class Model(object):
         beta = 0,
         passive_scalar = False,
         forcing = False,
-        epsilon_q = 1e-5,
+        epsilon_q = 0,
         wavenumber_forcing = 25,
         width_forcing = 2,
         nu4c = 5.e9,
@@ -565,7 +565,7 @@ class Model(object):
 
         """ Define the two-dimensional FFT methods.
         """
-        
+
         # need to fix bug in mkl_fft.irfft2
         if self.use_mkl:
             #import mkl

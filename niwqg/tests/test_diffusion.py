@@ -42,10 +42,10 @@ class QGTester(unittest.TestCase):
         """ Test if the hyperviscosity implementation simply damps
                 the Fourier coefficiants individualy. """
 
-        # self.m.run()
-        # qfh = self.m.fft(self.qi)*np.exp(-self.m.nu4*self.m.wv4*self.m.tmax)
-        # self.assertTrue(np.allclose(qfh,self.m.qh,rtol=rtol), 'Implementation of\
-        #                      hypterviscosity is broken QGModel')
+        self.m.run()
+        qfh = self.m.fft(self.qi)*np.exp(-self.m.nu4*self.m.wv4*self.m.tmax)
+        self.assertTrue(np.allclose(qfh,self.m.qh,rtol=rtol), 'Implementation of\
+                             hypterviscosity is broken QGModel')
 
 if __name__ == "__main__":
     unittest.main()

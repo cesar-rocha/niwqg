@@ -53,16 +53,16 @@ class QGTester(unittest.TestCase):
     def test_energy(self, rtol=1e-14):
         """ Diagnosed QG kientic energy must be the same as Ke from energy equation """
 
-        # KE_qg = self.m.diagnostics['ke_qg']['value']
-        # Ke = self.m.diagnostics['Ke']['value']
-        #
-        # self.assertTrue(np.allclose(KE_qg,Ke,rtol=rtol), "KE QG diagnostic is incorrect")
+        KE_qg = self.m.diagnostics['ke_qg']['value']
+        Ke = self.m.diagnostics['Ke']['value']
+
+        self.assertTrue(np.allclose(KE_qg,Ke,rtol=rtol), "KE QG diagnostic is incorrect")
 
     def test_tracer_variance(self, rtol=1e-14):
         """ Diagnosed passive-scalar variance must be the same cvar from variance equation """
-        # C2 = self.m.diagnostics['C2']['value']
-        # cvar = self.m.diagnostics['cvar']['value']
-        # self.assertTrue(np.allclose(C2,cvar,rtol=rtol), "Passive-scalar variance diagnostic is incorrect")
+        C2 = self.m.diagnostics['C2']['value']
+        cvar = self.m.diagnostics['cvar']['value']
+        self.assertTrue(np.allclose(C2,cvar,rtol=rtol), "Passive-scalar variance diagnostic is incorrect")
 
 if __name__ == "__main__":
     unittest.main()
