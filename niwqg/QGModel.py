@@ -90,7 +90,9 @@ class Model(object):
         overwrite=True,
         tsave_snapshots=10,
         tdiags = 10,
-        path = 'output/'):
+        path = 'output/',
+        use_mkl=False,
+        nthreads=1):
 
         self.nx = nx
         self.ny = nx
@@ -125,6 +127,9 @@ class Model(object):
         self.path = path
 
         self.use_filter = use_filter
+
+        self.use_mkl = use_mkl
+        self.nthreads = nthreads
 
         self._initialize_logger()
         self._initialize_grid()
@@ -198,7 +203,10 @@ class Model(object):
 
         # save initial conditions
         if self.save_to_disk:
-            save_snapshots(self,fields=['t','q','p'])
+            if self.passive_scalar:
+                save_snapshots(self,fields=['t','q','c'])
+            else:
+                save_snapshots(self,fields=['t','q'])
 
         # run the model
         while(self.t < self.tmax):
@@ -220,7 +228,7 @@ class Model(object):
         self._step_etdrk4()
         increment_diagnostics(self,)
         self._print_status()
-        save_snapshots(self,fields=['t','q','p'])
+        save_snapshots(self,fields=['t','q','c'])
 
     def _initialize_time(self):
 
@@ -557,7 +565,17 @@ class Model(object):
 
         """ Define the two-dimensional FFT methods.
         """
-
+        
+        # need to fix bug in mkl_fft.irfft2
+        if self.use_mkl:
+            #import mkl
+            #mkl.set_num_threads(self.nthreads)
+            #import mkl_fft
+            #self.fft =  (lambda x : mkl_fft.rfft2(x))
+            #self.ifft = (lambda x : mkl_fft.irfft2(x))
+            pass
+        else:
+            pass
         self.fft =  (lambda x : np.fft.rfft2(x))
         self.ifft = (lambda x : np.fft.irfft2(x))
 
