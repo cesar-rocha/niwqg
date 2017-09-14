@@ -372,6 +372,12 @@ class Kernel(object):
 
         """
 
+        self.forceh = self._update_qg_forcing()
+        #self.qh += np.sqrt(self.dt)*self.forceh
+
+        self.forcewh = self._update_wave_forcing()
+        #self.phih += np.sqrt(self.dt)*self.forcewh
+
         self._calc_energy_conversion()
         k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi()
         p1 = self.gamma1+self.gamma2 + self._calc_chi_phi()
@@ -379,13 +385,13 @@ class Kernel(object):
 
         # q-equation
         self.qh0 = self.qh.copy()
-        Fn0 = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph
+        Fn0 = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fn0*self.Qh)*self.filtr
         self.qh1 = self.qh.copy()
 
         # phi-equation
         self.phih0 = self.phih.copy()
-        Fn0w = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        Fn0w = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
         self.phih = (self.expch_hw*self.phih0 + Fn0w*self.Qhw)*self.filtr
         self.phih1 = self.phih.copy()
 
@@ -399,11 +405,11 @@ class Kernel(object):
         p2 = self.gamma1+self.gamma2 + self._calc_chi_phi()
         a2 = self._calc_ep_phi() + self._calc_smalldiss_phi()
 
-        Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph
+        Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
         # phi-equation
-        Fnaw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        Fnaw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
         self.phih = (self.expch_hw*self.phih0 + Fnaw*self.Qhw)*self.filtr
 
         # q-equation
@@ -416,11 +422,11 @@ class Kernel(object):
         p3 = self.gamma1+self.gamma2 + self._calc_chi_phi()
         a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
 
-        Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph
+        Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
         # phi-equation
-        Fnbw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        Fnbw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
         self.phih = (self.expch_hw*self.phih1 + ( 2.*Fnbw - Fn0w )*self.Qhw)*self.filtr
 
         # q-equation
@@ -433,21 +439,15 @@ class Kernel(object):
         p4 = self.gamma1+self.gamma2 + self._calc_chi_phi()
         a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
 
-        Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph
+        Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
 
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
 
-        self.forceh = self._update_qg_forcing()
-        self.qh += np.sqrt(self.dt)*self.forceh
-
         # phi-equation
-        Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
+        Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
         self.phih = (self.expchw*self.phih0 + Fn0w*self.f0w +  2.*(Fnaw+Fnbw)*self.fabw\
                   + Fncw*self.fcw)*self.filtr
-
-        self.forcewh = self._update_wave_forcing()
-        self.phih += np.sqrt(self.dt)*self.forcewh
 
         self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
         self.Pw += self.dt*(p1 + 2*(p2+p3) + p4)/6.
