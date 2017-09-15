@@ -381,7 +381,7 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi()
-        p1 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        p1 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a1 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
 
         # q-equation
@@ -403,7 +403,7 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         k2 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi()
-        p2 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        p2 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a2 = self._calc_ep_phi() + self._calc_smalldiss_phi()
 
         Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
@@ -420,7 +420,7 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         k3 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi()
-        p3 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        p3 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
 
         Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
@@ -437,7 +437,7 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         k4 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi()
-        p4 = self.gamma1+self.gamma2 + self._calc_chi_phi()
+        p4 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
 
         Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
@@ -713,12 +713,15 @@ class Kernel(object):
         return -self.nu4*self.spec_var(self.wv2*self.qh)
 
     def _calc_chi_phi(self):
-        """"  Compute dissipation of Pw. """
+        """"  Compute dissipation of Pw due to linear dissipation """
+        return -0.5*self.muw*(np.abs(self.phix)**2 + np.abs(self.phiy)**2).mean()/self.kappa2
+
+    def _calc_smallchi_phi(self):
+        """"  Compute dissipation of Pw due to small-scale dissipation. """
         lphix, lphiy = self.ifft(-self.ik*self.wv2*self.phih),\
                             self.ifft(-self.il*self.wv2*self.phih)
         return -0.5*self.nu4w*(np.abs(lphix)**2 + np.abs(lphiy)**2).mean()/self.kappa2\
                 -0.5*self.nuw*(np.abs(self.lapphi)**2).mean()/self.kappa2\
-                -0.5*self.muw*(np.abs(self.phix)**2 + np.abs(self.phiy)**2).mean()/self.kappa2
 
     def spec_var(self, ph):
         """ Compute variance of a variable `p` from its Fourier transform `ph` """
@@ -957,10 +960,17 @@ class Kernel(object):
         )
 
         add_diagnostic(self, 'chi_phi',
-                description='The hyperviscous dissipation of NIW potential energy',
+                description='The dissipation of NIW potential energy due to linear damping',
                 units=r'$s^{-3}$',
                 types = 'scalar',
                 function = (lambda self: self._calc_chi_phi())
+        )
+
+        add_diagnostic(self, 'smallchi_phi',
+                description='The small-scale dissipation of NIW potential energy',
+                units=r'$s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self._calc_smallchi_phi())
         )
 
     def _calc_derived_fields(self):
