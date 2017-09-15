@@ -349,10 +349,11 @@ class Kernel(object):
 
         #phase = np.random.rand(self.nl,self.nk)*2*np.pi
         #fh = np.sqrt(self.epsilon_w*self.spectrum_wave_forcing)*np.exp(1j*phase)
-        xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())
+        xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())/np.sqrt(2)
         #xi = np.ones_like(self.q)*(1. +1j) # force by a contant
         self.forcew = np.sqrt(self.epsilon_w)*xi
         return self.fft(self.forcew)
+        #return np.sqrt(self.epsilon_w)*(np.random.randn()+1j*np.random.randn())#/np.sqrt(2)
 
     def _update_niw_forcing(self):
         """ Updates the forcing (delta-correlated in time) """
@@ -375,7 +376,7 @@ class Kernel(object):
         self.forceh = self._update_qg_forcing()
         #self.qh += np.sqrt(self.dt)*self.forceh
 
-        self.forcewh = self._update_wave_forcing()
+        self.forcewh = self._update_wave_forcing() # single random number
         #self.phih += np.sqrt(self.dt)*self.forcewh
 
         self._calc_energy_conversion()
