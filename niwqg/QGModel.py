@@ -392,8 +392,11 @@ class Model(object):
             c1 = self._calc_ep_c()
 
         w1 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
-        k1 = self._calc_ep_psi()
+
         self._invert()
+
+        k1 = self._calc_ep_psi()
+
 
         Fna = -self.jacobian_psi_q()+self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
@@ -406,8 +409,8 @@ class Model(object):
             c2 = self._calc_ep_c()
 
         w2 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
-        k2 = self._calc_ep_psi()
         self._invert()
+        k2 = self._calc_ep_psi()
 
         Fnb = -self.jacobian_psi_q()+self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
@@ -420,8 +423,9 @@ class Model(object):
             c3 = self._calc_ep_c()
 
         w3 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
-        k3 = self._calc_ep_psi()
+
         self._invert()
+        k3 = self._calc_ep_psi()
 
         Fnc = -self.jacobian_psi_q()+self.forceh/np.sqrt(self.dt)
 
@@ -438,9 +442,10 @@ class Model(object):
             self.cvar += self.dt*(c1 + 2*(c2+c3) + c4)/6.
 
         w4 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
-        k4 = self._calc_ep_psi()
+
         # invert
         self._invert()
+        k4 = self._calc_ep_psi()
 
         # calcuate q
         self.q = self.ifft(self.qh).real
