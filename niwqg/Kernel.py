@@ -52,6 +52,10 @@ class Kernel(object):
                 Viscosity for for near-inertial waves.
         muw: float (optional)
                 Linear drag for for near-inertial waves.
+        sigma_q: amplitude of the potential vorticity forcing.
+        wavenumber_forcing: wavenumber of the porntial vorticity forcing.
+        width_forcing: width of the potential vorticity forcing.
+        sigma_w: amplitude of the wave forcing.
         dealias: bool (optional)
                 If True, then dealias solution using 2/3 rule.
         save_to_disk: bool (optional)
@@ -88,8 +92,8 @@ class Kernel(object):
         nuw=0.,
         mu=0,
         muw=0,
-        epsilon_q = 0.,
-        epsilon_w = 0.,
+        sigma_q = 0.,
+        sigma_w = 0.,
         wavenumber_forcing = 25,
         width_forcing = 2,
         dealias = False,
@@ -126,8 +130,8 @@ class Kernel(object):
         self.kappa2 = self.kappa**2
         self.cflmax = cflmax
 
-        self.epsilon_w =  epsilon_w
-        self.epsilon_q =  epsilon_q
+        self.sigma_w =  sigma_w
+        self.sigma_q =  sigma_q
         self.wavenumber_forcing = wavenumber_forcing
         self.width_forcing = width_forcing
 
@@ -313,35 +317,25 @@ class Kernel(object):
         self.logger.propagate = False
         self.logger.info(' Logger initialized')
 
-
     def _initialize_forcing(self):
 
         """ Sets up the spectrum of the stochastic forcing """
 
-        # See appendix A of Navid Constantinou's dissertation
-        # amplitude_forcing = sqrt(energy input)
+        # the spectrum of the forcing
+        self.spectrum_qg_forcing = np.exp(-((self.wv-self.wavenumber_forcing)**2) / (2*(self.width_forcing**2)) )
 
-        # the spectrum of the forcing (this is Navid's Qkl);
-        self.spectrum_qg_forcing = np.exp(-((self.wv-self.wavenumber_forcing)**2) / ( 2 * (self.width_forcing**2)) )
-
-        # Normalize such that the equivalent vortex kinetic energy spectrum integrates to one
+        # Normalize such that the equivalent kinetic energy spectrum integrates to one
         norm = self.spec_var( np.sqrt(self.spectrum_qg_forcing*self.wv2i/2) )
         self.spectrum_qg_forcing *= 1./norm
-
-        # now the wave forcing
-        # self.spectrum_wave_forcing = np.zeros_like(self.wv2)
-        # self.spectrum_wave_forcing[0,0] = 1
-        # # Normalize such that the equivalent wave kinetic energy spectrum integrates to one
-        # norm = 0.5/(self.M**2)
-        # self.spectrum_wave_forcing *= 1./norm
 
     def _update_qg_forcing(self):
 
         """ Updates the qg forcing (delta-correlated in time) """
 
         phase = np.random.rand(self.nl,self.nk)*2*np.pi
-        fh = np.sqrt(self.epsilon_q*self.spectrum_qg_forcing)*np.exp(1j*phase)
-        return fh
+        fh = self.sigma_q*np.sqrt(2*self.spectrum_qg_forcing)*np.exp(1j*phase)
+        self.force = self.ifft(fh).real
+        return self.fft(self.force)
 
     def _update_wave_forcing(self):
 
@@ -351,7 +345,7 @@ class Kernel(object):
         #fh = np.sqrt(self.epsilon_w*self.spectrum_wave_forcing)*np.exp(1j*phase)
         xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())/np.sqrt(2)
         #xi = np.ones_like(self.q)*(1. +1j) # force by a contant
-        self.forcew = np.sqrt(self.epsilon_w)*xi
+        self.forcew = self.sigma_w*xi # the energy input is epsilon_w/2
         return self.fft(self.forcew)
         #return np.sqrt(self.epsilon_w)*(np.random.randn()+1j*np.random.randn())#/np.sqrt(2)
 
@@ -380,9 +374,11 @@ class Kernel(object):
         #self.phih += np.sqrt(self.dt)*self.forcewh
 
         self._calc_energy_conversion()
-        k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi()
+        w1_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
+        w1_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi() + w1_q
         p1 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a1 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
+        a1 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w1_w
 
         # q-equation
         self.qh0 = self.qh.copy()
@@ -402,9 +398,11 @@ class Kernel(object):
         self._calc_rel_vorticity()
 
         self._calc_energy_conversion()
-        k2 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi()
+        w2_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
+        w2_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        k2 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi() + w2_q
         p2 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a2 = self._calc_ep_phi() + self._calc_smalldiss_phi()
+        a2 = self._calc_ep_phi() + self._calc_smalldiss_phi() + w2_w
 
         Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
@@ -419,9 +417,11 @@ class Kernel(object):
         self._calc_rel_vorticity()
 
         self._calc_energy_conversion()
-        k3 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi()
+        w3_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
+        w3_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        k3 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi() + w3_q
         p3 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
+        a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w3_w
 
         Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
@@ -436,9 +436,11 @@ class Kernel(object):
         self._calc_rel_vorticity()
 
         self._calc_energy_conversion()
-        k4 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi()
+        w4_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
+        w4_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        k4 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi() + w4_q
         p4 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi()
+        a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w4_w
 
         Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
 
@@ -453,6 +455,8 @@ class Kernel(object):
         self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
         self.Pw += self.dt*(p1 + 2*(p2+p3) + p4)/6.
         self.Kw += self.dt*(a1 + 2*(a2+a3) + a4)/6.
+        self.Work_q += self.dt*(w1_q + 2*(w2_q+w3_q) + w4_q)/6.
+        self.Work_w += self.dt*(w1_w + 2*(w2_w+w3_w) + w4_w)/6.
 
         # invert
         self.phi = self.ifft(self.phih)
@@ -596,6 +600,8 @@ class Kernel(object):
         self._calc_rel_vorticity()
         self.u, self.v = self.ifft(-self.il*self.ph).real, self.ifft(self.ik*self.ph).real
         self.Ke = self.ke = self._calc_ke_qg()
+        self.Work_q = 0.
+        self.Work_w = 0.
 
 
     def set_phi(self,phi):
@@ -818,6 +824,20 @@ class Kernel(object):
                 function = (lambda self: self.Kw)
         )
 
+        add_diagnostic(self, 'Work_q',
+                description='Accumulated work into balanced field by stochastic forcing, from work equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Work_q)
+        )
+
+        add_diagnostic(self, 'Work_w',
+                description='Accumulated work into wave field by stochastic forcing, from work equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Work_w)
+        )
+
         add_diagnostic(self, 'ke_qg',
                 description='Quasigeostrophic Kinetic Energy',
                 units=r'm^2 s^{-2}',
@@ -837,7 +857,7 @@ class Kernel(object):
                 description='Energy input by random forcing',
                 units=r'$m^2 s^{-3}$',
                 types = 'scalar',
-                function = (lambda self: -(self.p*self.ifft(self.forceh).real).mean()/np.sqrt(self.dt))
+                function = (lambda self: -(self.p*self.force).mean()/np.sqrt(self.dt))
         )
 
         add_diagnostic(self,'wave_energy_input',

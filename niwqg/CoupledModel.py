@@ -91,7 +91,7 @@ class Model(Kernel.Kernel):
         self.pwh = self.wv2i*self.qwh
         self.pvh = -self.wv2i*self.qh
         self.ph = self.pvh+self.pwh
-        self.p = self.ifft(self.ph).real
+        self.p =  self.ifft(self.ph).real
         self.pv = self.ifft(self.pvh).real
         self.pw = self.ifft(self.pwh).real
 

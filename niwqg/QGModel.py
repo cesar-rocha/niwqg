@@ -300,13 +300,24 @@ class Model(object):
         norm = self.spec_var( np.sqrt(self.spectrum_forcing*self.wv2i/2) )
         self.spectrum_forcing *= 1./norm
 
+        # self.spectrum_forcing = np.exp(-(self.wv - self.wavenumber_forcing)**2/(2*self.width_forcing**2))
+        # norm = 2*np.sum(self.spectrum_forcing*self.wv2i/2)
+        # self.spectrum_forcing = self.spectrum_forcing/norm
+
+
     def _update_qg_forcing(self):
 
         """ Updates the forcing (delta-correlated in time) """
 
         phase = np.random.rand(self.nl,self.nk)*2*np.pi
         fh = np.sqrt(self.epsilon_q*self.spectrum_forcing)*np.exp(1j*phase)
-        return (fh + np.conj(fh))/np.sqrt(2)
+        self.force = self.ifft(fh)
+        return self.fft(self.force)
+
+        # eta = (np.random.randn(self.nl, self.nk) + 1j*np.random.randn(self.nl, self.nk))/np.sqrt(2)
+        # fh = self.M*np.sqrt(self.epsilon_q*self.spectrum_forcing)*eta
+        # return fh
+
 
     def _initialize_filter(self):
 
@@ -361,8 +372,13 @@ class Model(object):
 
         """
 
+        self.forceh = self._update_qg_forcing()
+        #self.force = self.ifft(self.forceh)
+        # self.qh += self.dt*(-self.jacobian_psi_q() + self.forceh/np.sqrt(self.dt)-self.mu*self.qh)
+        # self._invert()
+
         self.qh0 = self.qh.copy()
-        Fn0 = -self.jacobian_psi_q()
+        Fn0 = -self.jacobian_psi_q() + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fn0*self.Qh)*self.filtr
         self.qh1 = self.qh.copy()
 
@@ -375,10 +391,11 @@ class Model(object):
             self._calc_derived_fields()
             c1 = self._calc_ep_c()
 
-        self._invert()
+        w1 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
         k1 = self._calc_ep_psi()
+        self._invert()
 
-        Fna = -self.jacobian_psi_q()
+        Fna = -self.jacobian_psi_q()+self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
         if self.passive_scalar:
@@ -388,10 +405,11 @@ class Model(object):
             self._calc_derived_fields()
             c2 = self._calc_ep_c()
 
-        self._invert()
+        w2 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
         k2 = self._calc_ep_psi()
+        self._invert()
 
-        Fnb = -self.jacobian_psi_q()
+        Fnb = -self.jacobian_psi_q()+self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
         if self.passive_scalar:
@@ -401,17 +419,14 @@ class Model(object):
             self._calc_derived_fields()
             c3 = self._calc_ep_c()
 
-        self._invert()
+        w3 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
         k3 = self._calc_ep_psi()
+        self._invert()
 
-        Fnc = -self.jacobian_psi_q()
-        self.forceh = self._update_qg_forcing()
+        Fnc = -self.jacobian_psi_q()+self.forceh/np.sqrt(self.dt)
 
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
-
-        self.forceh = self._update_qg_forcing()
-        self.qh += np.sqrt(self.dt)*self.forceh
 
         if self.passive_scalar:
             Fncc = -self.jacobian_psi_c()
@@ -422,6 +437,8 @@ class Model(object):
             c4 = self._calc_ep_c()
             self.cvar += self.dt*(c1 + 2*(c2+c3) + c4)/6.
 
+        w4 =  -(self.p*self.force).mean()/np.sqrt(self.dt)
+        k4 = self._calc_ep_psi()
         # invert
         self._invert()
 
@@ -431,8 +448,9 @@ class Model(object):
         if self.passive_scalar:
             self.c = self.ifft(self.ch).real
 
-        k4 = self._calc_ep_psi()
         self.Ke += self.dt*(k1 + 2*(k2+k3) + k4)/6.
+        self.Work += self.dt*(w1 + 2*(w2+w3) + w4)/6.
+        self.Work2 += -np.sqrt(self.dt)*(self.p*self.ifft(self.forceh)).mean()
 
 
     def _initialize_etdrk4(self):
@@ -546,6 +564,8 @@ class Model(object):
         self.qh = self.fft(self.q)
         self._invert()
         self.Ke = self._calc_ke_qg()
+        self.Work = 0.
+        self.Work2 = 0.
 
     def set_c(self,c):
 
@@ -684,6 +704,20 @@ class Model(object):
                 units=r'm^2 s^{-2}',
                 types = 'scalar',
                 function = (lambda self: self.Ke)
+        )
+
+        add_diagnostic(self, 'Work',
+                description='Work by stochastic forcing, from work equation',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Work)
+        )
+
+        add_diagnostic(self, 'Work2',
+                description='Work by stochastic forcing, from work equation using Euler',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self.Work2 )
         )
 
         add_diagnostic(self,'ens',
