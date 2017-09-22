@@ -79,7 +79,7 @@ class Model(object):
         beta = 0,
         passive_scalar = False,
         forcing = False,
-        epsilon_q = 0,
+        sigma_q = 0,
         wavenumber_forcing = 25,
         width_forcing = 2,
         nu4c = 5.e9,
@@ -117,7 +117,7 @@ class Model(object):
         self.muc = muc
 
         self.forcing = forcing
-        self.epsilon_q =  epsilon_q
+        self.sigma_q =  sigma_q
         self.wavenumber_forcing = wavenumber_forcing
         self.width_forcing = width_forcing
 
@@ -310,7 +310,7 @@ class Model(object):
         """ Updates the forcing (delta-correlated in time) """
 
         phase = np.random.rand(self.nl,self.nk)*2*np.pi
-        fh = np.sqrt(self.epsilon_q*self.spectrum_forcing)*np.exp(1j*phase)
+        fh = self.sigma_q*np.sqrt(self.spectrum_forcing)*np.exp(1j*phase)
         self.force = self.ifft(fh)
         return self.fft(self.force)
 
