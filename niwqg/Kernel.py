@@ -343,9 +343,10 @@ class Kernel(object):
 
         #phase = np.random.rand(self.nl,self.nk)*2*np.pi
         #fh = np.sqrt(self.epsilon_w*self.spectrum_wave_forcing)*np.exp(1j*phase)
-        xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())/np.sqrt(2)
+        #xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())/np.sqrt(2)
         #xi = np.ones_like(self.q)*(1. +1j) # force by a contant
-        self.forcew = self.sigma_w*xi # the energy input is epsilon_w/2
+        #self.forcew = self.sigma_w*xi # the energy input is epsilon_w/2
+        self.forcew = self.sigma_w*np.sqrt(self.dt) # correct for sqrt(dt) factor from stochastic forcing.
         return self.fft(self.forcew)
         #return np.sqrt(self.epsilon_w)*(np.random.randn()+1j*np.random.randn())#/np.sqrt(2)
 
