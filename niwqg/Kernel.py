@@ -55,7 +55,7 @@ class Kernel(object):
         sigma_q: amplitude of the potential vorticity forcing.
         wavenumber_forcing: wavenumber of the porntial vorticity forcing.
         width_forcing: width of the potential vorticity forcing.
-        sigma_w: amplitude of the wave forcing.
+        sigma_w: amplitude of the wave velocity added by storm.
         dealias: bool (optional)
                 If True, then dealias solution using 2/3 rule.
         save_to_disk: bool (optional)
@@ -94,6 +94,7 @@ class Kernel(object):
         muw=0,
         sigma_q = 0.,
         sigma_w = 0.,
+        tstorm=2000.,
         wavenumber_forcing = 25,
         width_forcing = 2,
         dealias = False,
@@ -134,7 +135,7 @@ class Kernel(object):
         self.sigma_q =  sigma_q
         self.wavenumber_forcing = wavenumber_forcing
         self.width_forcing = width_forcing
-
+        self.tstorm = tstorm
         self.hslash = self.f/self.kappa2
 
         self.save_to_disk = save_to_disk
@@ -345,8 +346,8 @@ class Kernel(object):
         #fh = np.sqrt(self.epsilon_w*self.spectrum_wave_forcing)*np.exp(1j*phase)
         xi = np.ones_like(self.q)*(np.random.randn()+1j*np.random.randn())/np.sqrt(2)
         #xi = np.ones_like(self.q)*(1. +1j) # force by a contant
-        self.forcew = self.sigma_w*xi # the energy input is epsilon_w/2
-        return self.fft(self.forcew)
+        self.phi_storm = self.sigma_w*xi # the energy input is epsilon_w/2
+        return self.fft(self.phi_storm)
         #return np.sqrt(self.epsilon_w)*(np.random.randn()+1j*np.random.randn())#/np.sqrt(2)
 
     def _update_niw_forcing(self):
@@ -370,15 +371,21 @@ class Kernel(object):
         self.forceh = self._update_qg_forcing()
         #self.qh += np.sqrt(self.dt)*self.forceh
 
-        self.forcewh = self._update_wave_forcing() # single random number
-        #self.phih += np.sqrt(self.dt)*self.forcewh
+        if  (self.tc % self.tstorm)==0:
+            print("STORM")
+            self.phi_storm_h = self._update_wave_forcing() # single random number
+            self.phih += self.phi_storm_h
+        else:
+            self.phi_storm = 0.
+
+        self.Work_w += 0.5*(np.abs(self.phi_storm)**2).mean() + np.real(self.phi_storm*np.fft.ifft(self.phi)).mean()
 
         self._calc_energy_conversion()
         w1_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
-        w1_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        #w1_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
         k1 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi() + w1_q
         p1 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a1 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w1_w
+        a1 = self._calc_ep_phi()+ self._calc_smalldiss_phi() #+ w1_w
 
         # q-equation
         self.qh0 = self.qh.copy()
@@ -388,7 +395,7 @@ class Kernel(object):
 
         # phi-equation
         self.phih0 = self.phih.copy()
-        Fn0w = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
+        Fn0w = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expch_hw*self.phih0 + Fn0w*self.Qhw)*self.filtr
         self.phih1 = self.phih.copy()
 
@@ -399,16 +406,16 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         w2_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
-        w2_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        #w2_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
         k2 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi() + self._calc_smalldiss_psi() + w2_q
         p2 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a2 = self._calc_ep_phi() + self._calc_smalldiss_phi() + w2_w
+        a2 = self._calc_ep_phi() + self._calc_smalldiss_phi() #+ w2_w
 
         Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
         # phi-equation
-        Fnaw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
+        Fnaw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expch_hw*self.phih0 + Fnaw*self.Qhw)*self.filtr
 
         # q-equation
@@ -418,16 +425,16 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         w3_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
-        w3_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        #w3_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
         k3 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi() + w3_q
         p3 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w3_w
+        a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi() #+ w3_w
 
         Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
         # phi-equation
-        Fnbw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
+        Fnbw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expch_hw*self.phih1 + ( 2.*Fnbw - Fn0w )*self.Qhw)*self.filtr
 
         # q-equation
@@ -437,10 +444,10 @@ class Kernel(object):
 
         self._calc_energy_conversion()
         w4_q = -(self.p*self.force).mean()/np.sqrt(self.dt)
-        w4_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
+        #w4_w =  (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt)
         k4 = -(self.gamma1+self.gamma2) + (self.xi1+self.xi2) + self._calc_ep_psi()+ self._calc_smalldiss_psi() + w4_q
         p4 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
-        a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w4_w
+        a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi() #+ w4_w
 
         Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
 
@@ -448,7 +455,7 @@ class Kernel(object):
                   + Fnc*self.fc)*self.filtr
 
         # phi-equation
-        Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi) + self.forcewh/np.sqrt(self.dt)
+        Fncw = -self.jacobian_psi_phi() - 0.5j*self.fft(self.phi*self.q_psi)
         self.phih = (self.expchw*self.phih0 + Fn0w*self.f0w +  2.*(Fnaw+Fnbw)*self.fabw\
                   + Fncw*self.fcw)*self.filtr
 
@@ -456,12 +463,13 @@ class Kernel(object):
         self.Pw += self.dt*(p1 + 2*(p2+p3) + p4)/6.
         self.Kw += self.dt*(a1 + 2*(a2+a3) + a4)/6.
         self.Work_q += self.dt*(w1_q + 2*(w2_q+w3_q) + w4_q)/6.
-        self.Work_w += self.dt*(w1_w + 2*(w2_w+w3_w) + w4_w)/6.
+        #self.Work_w += self.dt*(w1_w + 2*(w2_w+w3_w) + w4_w)/6.
 
         # invert
         self.phi = self.ifft(self.phih)
         self._invert()
         self._calc_rel_vorticity()
+
 
 
     def _initialize_etdrk4(self):
@@ -860,12 +868,12 @@ class Kernel(object):
                 function = (lambda self: -(self.p*self.force).mean()/np.sqrt(self.dt))
         )
 
-        add_diagnostic(self,'wave_energy_input',
-                description='Energy input by random forcing',
-                units=r'$m^2 s^{-3}$',
-                types = 'scalar',
-                function = (lambda self: (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt))
-        )
+        # add_diagnostic(self,'wave_energy_input',
+        #         description='Energy input by random forcing',
+        #         units=r'$m^2 s^{-3}$',
+        #         types = 'scalar',
+        #         function = (lambda self: (np.conj(self.phi)*self.forcew).mean().real/np.sqrt(self.dt))
+        # )
 
         add_diagnostic(self, 'ke_niw',
                 description='Near-inertial Kinetic Energy',
