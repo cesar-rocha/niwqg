@@ -82,15 +82,19 @@ class Model(Kernel.Kernel):
         """
 
         # the wave PV
-        self.phi2 = np.abs(self.phi)**2
-        self.gphi2h = -self.wv2*self.fft(self.phi2)
-        self.qwh = 0.5*(0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f
+        self.Ah = self.fft( (np.abs(self.phi)**2))/(2*self.f)
+        self.divFph = 0.5*self.jacobian_phic_phi()/self.f
+        #self.phi2 = np.abs(self.phi)**2
+        #self.gphi2h = -self.wv2*self.fft(self.phi2)
+        #self.qwh = 0.5*(0.5*self.gphi2h  + self.jacobian_phic_phi())/self.f
+        self.qwh = -0.5*self.wv2*self.Ah + self.divFph
         self.qwh *= self.filtr
 
         # invert for psi
         self.pwh = self.wv2i*self.qwh
         self.pvh = -self.wv2i*self.qh
         self.ph = self.pvh+self.pwh
+        self.peh = self.ph-self.Ah
         self.p =  self.ifft(self.ph).real
         self.pv = self.ifft(self.pvh).real
         self.pw = self.ifft(self.pwh).real

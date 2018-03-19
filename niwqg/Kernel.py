@@ -382,7 +382,10 @@ class Kernel(object):
 
         # q-equation
         self.qh0 = self.qh.copy()
-        Fn0 = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #Fn0 = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #self.Ah = self.fft( (np.abs(self.phi)**2) * self.filtr)/(2*self.f)
+        #self.Dqh = +self.mu*self.wv2*self.ph -(2*self.muw-self.mu)*self.wv2*self.Ah - 2*self.mu*self.qwh
+        Fn0 = -self.jacobian_psi_q() + self.dissipation_q()
         self.qh = (self.expch_h*self.qh0 + Fn0*self.Qh)*self.filtr
         self.qh1 = self.qh.copy()
 
@@ -404,7 +407,11 @@ class Kernel(object):
         p2 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a2 = self._calc_ep_phi() + self._calc_smalldiss_phi() + w2_w
 
-        Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #Fna = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #self.Ah = self.fft( (np.abs(self.phi)**2) * self.filtr)/(2*self.f)
+        #self.Dqh = +self.mu*self.wv2*self.ph -(2*self.muw-self.mu)*self.wv2*self.Ah - 2*self.mu*self.qwh
+        Fna = -self.jacobian_psi_q() + self.dissipation_q()
+
         self.qh = (self.expch_h*self.qh0 + Fna*self.Qh)*self.filtr
 
         # phi-equation
@@ -423,7 +430,12 @@ class Kernel(object):
         p3 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a3 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w3_w
 
-        Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #Fnb = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #self.Ah = self.fft( (np.abs(self.phi)**2) * self.filtr)/(2*self.f)
+        #self.Dqh = +self.mu*self.wv2*self.ph -(2*self.muw-self.mu)*self.wv2*self.Ah - 2*self.mu*self.qwh
+        Fnb = -self.jacobian_psi_q() + self.dissipation_q()
+
+
         self.qh = (self.expch_h*self.qh1 + ( 2.*Fnb - Fn0 )*self.Qh)*self.filtr
 
         # phi-equation
@@ -442,7 +454,10 @@ class Kernel(object):
         p4 = self.gamma1+self.gamma2 + self._calc_chi_phi() + self._calc_smallchi_phi()
         a4 = self._calc_ep_phi()+ self._calc_smalldiss_phi() + w4_w
 
-        Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #Fnc = -self.jacobian_psi_q() + self.mu*self.wv2*self.ph + self.forceh/np.sqrt(self.dt)
+        #self.Ah = self.fft( (np.abs(self.phi)**2) * self.filtr)/(2*self.f)
+        #self.Dqh = +self.mu*self.wv2*self.ph -(2*self.muw-self.mu)*self.wv2*self.Ah - 2*self.mu*self.qwh
+        Fnc = -self.jacobian_psi_q() + self.dissipation_q()
 
         self.qh = (self.expch*self.qh0 + Fn0*self.f0 +  2.*(Fna+Fnb)*self.fab\
                   + Fnc*self.fc)*self.filtr
@@ -534,6 +549,12 @@ class Kernel(object):
         jach = self.fft( (self.u*self.phix + self.v*self.phiy) )
         jach[0,0] = 0
         return jach
+
+    def dissipation_q(self):
+        """ Compute the dissipation D_q in Fourier space """
+
+        return +self.mu*self.wv2*self.ph -(2*self.muw-self.mu)*self.wv2*self.Ah - 2*self.muw*self.qwh
+        #return  +self.mu*self.wv2*self.peh -(self.muw-self.mu)*self.wv2*self.Ah -2*self.muw*self.divFph
 
     def jacobian_psi_q(self):
 
@@ -658,17 +679,30 @@ class Kernel(object):
 
         if  (self.tc % self.twrite)==0:
             self.ke = self._calc_ke_qg()
+            self.kee = self._calc_ke_euler()
             self.kew = self._calc_ke_niw()
             self.pew = self._calc_pe_niw()
             self.cfl = self._calc_cfl()
-            self.logger.info('Step: %4i, Time: %2.1e, P: %2.1e, Ke: %4.3e, Kw: %4.3e, Pw: %4.3e, CFL: %3.2f'
-                    , self.tc,self.t, self.t/self.tmax,self.ke,self.kew,self.pew,self.cfl )
+            self.logger.info('Step: %4i, Time: %2.1e, P: %2.1e, Ke: %4.3e, Ke_e: %4.3e, Kw: %4.3e, Pw: %4.3e, CFL: %3.2f'
+                    , self.tc,self.t, self.t/self.tmax,self.ke,self.kee,self.kew,self.pew,self.cfl)
 
             assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
 
     def _calc_ke_qg(self):
         """ Compute geostrophic kinetic energy, Ke. """
         return 0.5*self.spec_var(self.wv*self.ph)
+
+    def _calc_ke_euler(self):
+        """ Compute Eulerian-mean kinetic energy, K^E """
+        
+        self.action = (np.abs(self.phi)**2)/(2*self.f)
+        self.pe = self.p+self.action
+        self.peh = self.fft(self.pe)
+        return 0.5*self.spec_var(self.wv*self.peh)
+
+    #def _calc_ke_stokes(self):
+    #    """ Compute Stokes kinetic energy, K^S """
+    #    return self.ke-self.kee
 
     def _calc_ke_niw(self):
         """ Compute near-inertial kinetic energy, Kw. """
@@ -772,6 +806,7 @@ class Kernel(object):
         divFw = 0.5*self.hslash*(np.conj(self.phi)*self.lapphi).imag
 
         # correlations
+        self.gammaS = (self.q*divFw).mean()/self.f
         self.gamma1 = (0.5*self.q_psi*divFw).mean()/self.f
         self.gamma2 = 0.5*self.hslash*((np.conj(self.lapphi)*J_psi_phi).real).mean()/self.f
         self.xi1 = J_diss_phi.mean()/self.f
@@ -845,6 +880,20 @@ class Kernel(object):
                 function = (lambda self: self._calc_ke_qg())
         )
 
+        add_diagnostic(self, 'ke_euler',
+                description='Eulerian Kinetic Energy',
+                units=r'm^2 s^{-2}',
+                types = 'scalar',
+                function = (lambda self: self._calc_ke_euler())
+        )
+
+        #add_diagnostic(self, 'ke_stokes',
+        #        description='Stokes Energy',
+        #        units=r'm^2 s^{-2}',
+        #        types = 'scalar',
+        #        function = (lambda self: self._calc_ke_stokes())
+        #)
+
 
         add_diagnostic(self, 'ens',
                 description='Quasigeostrophic Potential Enstrophy',
@@ -916,6 +965,14 @@ class Kernel(object):
                 function = (lambda self: self.gamma1)
         )
 
+        add_diagnostic(self, 'gamma_S',
+                description='GammaS',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: self.gammaS)
+        )
+
+
         add_diagnostic(self, 'gamma_a',
                 description='The energy conversion due to advection',
                 units=r'$m^2 s^{-3}$',
@@ -929,6 +986,15 @@ class Kernel(object):
                 types = 'scalar',
                 function = (lambda self: self.xi1)
         )
+
+        add_diagnostic(self, 'xi',
+                description='The QG energy generation due to wave dissipation, vorticity',
+                units=r'$m^2 s^{-3}$',
+                types = 'scalar',
+                function = (lambda self: -2*self.muw*(self.q_psi*self.action).mean())
+        )
+
+
 
         add_diagnostic(self, 'xi_a',
                 description='The QG energy generation due to wave dissipation, advection',
