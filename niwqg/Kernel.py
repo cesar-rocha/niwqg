@@ -80,7 +80,7 @@ class Kernel(object):
         twrite=1000.,
         tmax=250000.,
         use_filter = True,
-        cflmax = 0.8,
+        cflmax = .95,
         U = .0,
         f = 1.e-4,
         N = 0.01,
@@ -685,7 +685,13 @@ class Kernel(object):
             self.logger.info('Step: %4i, Time: %2.1e, P: %2.1e, Ke: %4.3e, Ke_e: %4.3e, Kw: %4.3e, Pw: %4.3e, CFL: %3.2f'
                     , self.tc,self.t, self.t/self.tmax,self.ke,self.kee,self.kew,self.pew,self.cfl)
 
-            assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
+            #assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
+            if self.cfl>self.cflmax:
+                save_diagnostics(self)
+                assert self.cfl<self.cflmax, self.logger.error('CFL condition violated')
+                self.logger.error('CFL condition violated')
+
+            
 
     def _calc_ke_qg(self):
         """ Compute geostrophic kinetic energy, Ke. """
