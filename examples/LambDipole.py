@@ -138,20 +138,20 @@ i = g1.size
 
 KE, PE = KE_qg[i-1]-KE_qg[0], PE_niw[i-1]-PE_niw[0]
 
-G1, G2 = integrate.simps(y=g1[:i],x=time[:i]),  integrate.simps(y=g2[:i],x=time[:i])
-X1 = -integrate.simps(y=x1[:i],x=time[:i])
-X2 = -integrate.simps(y=x2[:i],x=time[:i])
+G1, G2 = integrate.simpson(y=g1[:i],x=time[:i]),  integrate.simpson(y=g2[:i],x=time[:i])
+X1 = -integrate.simpson(y=x1[:i],x=time[:i])
+X2 = -integrate.simpson(y=x2[:i],x=time[:i])
 G1_Pw, G2_Pw = G1/PE, G2/PE
 G1_Ke, G2_Ke, X1_Ke, X2_Ke = G1/KE, G2/KE, X1/KE, X2/KE
 G_Ke = G1_Ke+G2_Ke
-CHI_Pw = integrate.simps(y=chi_phi[:i],x=time[:i])/PE
-EP_Ke = -integrate.simps(y=ep_psi[:i],x=time[:i])/KE
+CHI_Pw = integrate.simpson(y=chi_phi[:i],x=time[:i])/PE
+EP_Ke = -integrate.simpson(y=ep_psi[:i],x=time[:i])/KE
 
 RES_PE = 1-(G1_Pw+G2_Pw+CHI_Pw)
 RES_KE = 1+(G1_Ke+G2_Ke+X1_Ke+X2_Ke+EP_Ke)
 
 res = (dKE+dPE+ep_psi+chi_phi)
-RES =  integrate.simps(y=res,x=time)/KE
+RES =  integrate.simpson(y=res,x=time)/KE
 
 stop = timeit.default_timer()
 print("Time elapsed: %3.2f seconds" %(stop - start))
